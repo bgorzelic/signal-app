@@ -13,6 +13,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
@@ -24,7 +25,7 @@ import java.util.Locale
 
 @Composable
 fun RoamingTimelineCard(event: NetworkEvent) {
-    val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
+    val timeFormat = remember { SimpleDateFormat("HH:mm:ss", Locale.US) }
     val color = when (event.eventType) {
         EventType.ROAM -> MaterialTheme.colorScheme.primary
         EventType.ASSOC -> MaterialTheme.colorScheme.tertiary
