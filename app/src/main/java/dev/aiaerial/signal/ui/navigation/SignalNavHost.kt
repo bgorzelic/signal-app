@@ -26,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import dev.aiaerial.signal.ui.scanner.ScannerScreen
 import kotlinx.serialization.Serializable
 
 // Type-safe route objects
@@ -87,7 +88,7 @@ fun SignalNavHost() {
             modifier = Modifier.padding(innerPadding),
         ) {
             composable<ScannerRoute> {
-                PlaceholderScreen("Scanner")
+                ScannerScreen()
             }
             composable<SyslogRoute> {
                 PlaceholderScreen("Syslog")
