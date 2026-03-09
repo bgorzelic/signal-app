@@ -30,6 +30,31 @@ class SessionExporterTest {
     }
 
     @Test
+    fun `toCsv escapes fields containing commas`() {
+        val events = listOf(
+            NetworkEvent(
+                id = 1, timestamp = 1710000000000L, eventType = EventType.ROAM,
+                apName = "AP, Floor 2", vendor = Vendor.CISCO,
+                rawMessage = "raw", sessionId = "s1"
+            ),
+        )
+        val csv = SessionExporter.toCsv(events)
+        val dataLine = csv.lines()[1]
+        assertTrue("Comma in AP name should be quoted", dataLine.contains("\"AP, Floor 2\""))
+        assertEquals(2, csv.lines().size) // header + 1 event
+    }
+
+    @Test
+    fun `toCsv and toJson handle empty list`() {
+        val csvEmpty = SessionExporter.toCsv(emptyList())
+        assertTrue(csvEmpty.startsWith("timestamp,"))
+        assertEquals(1, csvEmpty.lines().size) // header only
+
+        val jsonEmpty = SessionExporter.toJson(emptyList())
+        assertEquals("[]", jsonEmpty)
+    }
+
+    @Test
     fun `export events as JSON`() {
         val events = listOf(
             NetworkEvent(

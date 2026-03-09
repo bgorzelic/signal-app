@@ -8,15 +8,22 @@ object SessionExporter {
 
     private val json = Json { prettyPrint = true }
 
+    private fun String.csvEscape(): String {
+        val needsQuoting = contains(',') || contains('"') || contains('\n') || contains('\r') ||
+            startsWith('=') || startsWith('+') || startsWith('-') || startsWith('@')
+        return if (needsQuoting) "\"${replace("\"", "\"\"")}\"" else this
+    }
+
     fun toCsv(events: List<NetworkEvent>): String = buildString {
         appendLine("timestamp,event_type,client_mac,ap_name,bssid,channel,rssi,reason_code,vendor")
         events.forEach { e ->
             appendLine(
-                "${e.timestamp},${e.eventType},${e.clientMac ?: ""},${e.apName ?: ""}," +
-                "${e.bssid ?: ""},${e.channel ?: ""},${e.rssi ?: ""},${e.reasonCode ?: ""},${e.vendor}"
+                "${e.timestamp},${e.eventType.name.csvEscape()},${(e.clientMac ?: "").csvEscape()}," +
+                "${(e.apName ?: "").csvEscape()},${(e.bssid ?: "").csvEscape()},${e.channel ?: ""}," +
+                "${e.rssi ?: ""},${e.reasonCode ?: ""},${e.vendor.name.csvEscape()}"
             )
         }
-    }.trimEnd()
+    }.trimEnd('\n', '\r')
 
     fun toJson(events: List<NetworkEvent>): String {
         val serializable = events.map { e ->
