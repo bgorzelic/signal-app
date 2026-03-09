@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.aiaerial.signal.data.EventPipeline
 import dev.aiaerial.signal.data.model.NetworkEvent
 import dev.aiaerial.signal.data.openclaw.OpenClawClient
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,12 +45,15 @@ class LogImportViewModel @Inject constructor(
     fun analyzeWithAi() {
         viewModelScope.launch {
             _isAnalyzing.value = true
-            _aiAnalysis.value = try {
-                openClawClient.analyzeLogBlock(_logText.value)
+            try {
+                _aiAnalysis.value = openClawClient.analyzeLogBlock(_logText.value)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                "Error: ${e.message}"
+                _aiAnalysis.value = "Error: ${e.message}"
+            } finally {
+                _isAnalyzing.value = false
             }
-            _isAnalyzing.value = false
         }
     }
 

@@ -10,8 +10,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -25,7 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
-fun LogImportScreen(viewModel: LogImportViewModel = hiltViewModel()) {
+fun LogImportScreen(
+    viewModel: LogImportViewModel = hiltViewModel(),
+    onBack: () -> Unit = {},
+) {
     val logText by viewModel.logText.collectAsState()
     val parsedEvents by viewModel.parsedEvents.collectAsState()
     val aiAnalysis by viewModel.aiAnalysis.collectAsState()
@@ -37,7 +44,12 @@ fun LogImportScreen(viewModel: LogImportViewModel = hiltViewModel()) {
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        Text("Import Logs", style = MaterialTheme.typography.titleMedium)
+        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+            Text("Import Logs", style = MaterialTheme.typography.titleMedium)
+        }
         Text(
             "Paste WLC debug output (e.g. 'debug client mac-address', show commands)",
             style = MaterialTheme.typography.bodySmall,
@@ -58,10 +70,16 @@ fun LogImportScreen(viewModel: LogImportViewModel = hiltViewModel()) {
         Spacer(modifier = Modifier.height(8.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { viewModel.parseLog() }) {
+            Button(
+                onClick = { viewModel.parseLog() },
+                enabled = logText.isNotBlank(),
+            ) {
                 Text("Parse Events")
             }
-            OutlinedButton(onClick = { viewModel.analyzeWithAi() }, enabled = !isAnalyzing) {
+            OutlinedButton(
+                onClick = { viewModel.analyzeWithAi() },
+                enabled = !isAnalyzing && logText.isNotBlank(),
+            ) {
                 Text(if (isAnalyzing) "Analyzing..." else "AI Analysis")
             }
             TextButton(onClick = { viewModel.clear() }) {

@@ -100,7 +100,7 @@ fun SignalNavHost() {
                 )
             }
             composable<ImportRoute> {
-                LogImportScreen()
+                LogImportScreen(onBack = { navController.popBackStack() })
             }
             composable<TimelineRoute> {
                 TimelineScreen()
