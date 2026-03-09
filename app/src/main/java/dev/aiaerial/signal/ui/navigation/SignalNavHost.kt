@@ -28,6 +28,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dev.aiaerial.signal.ui.scanner.ScannerScreen
 import dev.aiaerial.signal.ui.syslog.SyslogScreen
+import dev.aiaerial.signal.ui.timeline.TimelineScreen
 import kotlinx.serialization.Serializable
 
 // Type-safe route objects
@@ -95,7 +96,7 @@ fun SignalNavHost() {
                 SyslogScreen()
             }
             composable<TimelineRoute> {
-                PlaceholderScreen("Timeline")
+                TimelineScreen()
             }
             composable<SettingsRoute> {
                 PlaceholderScreen("Settings")
