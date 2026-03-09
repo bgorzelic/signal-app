@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Message
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material.icons.outlined.Wifi
@@ -42,7 +42,7 @@ data class TopLevelRoute<T : Any>(
 
 val topLevelRoutes = listOf(
     TopLevelRoute("Scanner", ScannerRoute, Icons.Outlined.Wifi),
-    TopLevelRoute("Syslog", SyslogRoute, Icons.Outlined.Email),
+    TopLevelRoute("Syslog", SyslogRoute, Icons.Outlined.Message),
     TopLevelRoute("Timeline", TimelineRoute, Icons.Outlined.Timeline),
     TopLevelRoute("Settings", SettingsRoute, Icons.Outlined.Settings),
 )
