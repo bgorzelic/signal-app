@@ -2,7 +2,6 @@ package dev.aiaerial.signal.data.local
 
 import androidx.room.Dao
 import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import dev.aiaerial.signal.data.model.EventType
 import dev.aiaerial.signal.data.model.NetworkEvent
@@ -11,10 +10,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface NetworkEventDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insert(event: NetworkEvent): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insertAll(events: List<NetworkEvent>): List<Long>
 
     @Query("SELECT * FROM network_events WHERE sessionId = :sessionId ORDER BY timestamp DESC")

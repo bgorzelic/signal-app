@@ -10,11 +10,13 @@ class Converters {
     fun fromEventType(value: EventType): String = value.name
 
     @TypeConverter
-    fun toEventType(value: String): EventType = EventType.valueOf(value)
+    fun toEventType(value: String): EventType =
+        runCatching { EventType.valueOf(value) }.getOrDefault(EventType.UNKNOWN)
 
     @TypeConverter
     fun fromVendor(value: Vendor): String = value.name
 
     @TypeConverter
-    fun toVendor(value: String): Vendor = Vendor.valueOf(value)
+    fun toVendor(value: String): Vendor =
+        runCatching { Vendor.valueOf(value) }.getOrDefault(Vendor.GENERIC)
 }
