@@ -1,0 +1,113 @@
+package dev.aiaerial.signal.ui.navigation
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Timeline
+import androidx.compose.material.icons.outlined.Wifi
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import kotlinx.serialization.Serializable
+
+// Type-safe route objects
+@Serializable object ScannerRoute
+@Serializable object SyslogRoute
+@Serializable object TimelineRoute
+@Serializable object SettingsRoute
+
+data class TopLevelRoute<T : Any>(
+    val name: String,
+    val route: T,
+    val icon: ImageVector,
+)
+
+val topLevelRoutes = listOf(
+    TopLevelRoute("Scanner", ScannerRoute, Icons.Outlined.Wifi),
+    TopLevelRoute("Syslog", SyslogRoute, Icons.Outlined.Email),
+    TopLevelRoute("Timeline", TimelineRoute, Icons.Outlined.Timeline),
+    TopLevelRoute("Settings", SettingsRoute, Icons.Outlined.Settings),
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SignalNavHost() {
+    val navController = rememberNavController()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("SIGNAL") })
+        },
+        bottomBar = {
+            NavigationBar {
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentDestination = navBackStackEntry?.destination
+                topLevelRoutes.forEach { topLevelRoute ->
+                    NavigationBarItem(
+                        icon = { Icon(topLevelRoute.icon, contentDescription = topLevelRoute.name) },
+                        label = { Text(topLevelRoute.name) },
+                        selected = currentDestination?.hierarchy?.any {
+                            it.hasRoute(topLevelRoute.route::class)
+                        } == true,
+                        onClick = {
+                            navController.navigate(topLevelRoute.route) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    )
+                }
+            }
+        },
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = ScannerRoute,
+            modifier = Modifier.padding(innerPadding),
+        ) {
+            composable<ScannerRoute> {
+                PlaceholderScreen("Scanner")
+            }
+            composable<SyslogRoute> {
+                PlaceholderScreen("Syslog")
+            }
+            composable<TimelineRoute> {
+                PlaceholderScreen("Timeline")
+            }
+            composable<SettingsRoute> {
+                PlaceholderScreen("Settings")
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaceholderScreen(name: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = name)
+    }
+}
