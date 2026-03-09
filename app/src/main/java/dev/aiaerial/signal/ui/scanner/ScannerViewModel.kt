@@ -6,8 +6,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.aiaerial.signal.data.wifi.WifiConnectionInfo
 import dev.aiaerial.signal.data.wifi.WifiScanResult
 import dev.aiaerial.signal.data.wifi.WifiScanner
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -46,7 +48,7 @@ class ScannerViewModel @Inject constructor(
 
     private fun pollConnectionInfo() {
         viewModelScope.launch {
-            while (true) {
+            while (currentCoroutineContext().isActive) {
                 val info = wifiScanner.connectionInfo()
                 _connectionInfo.value = info
                 if (info != null) {

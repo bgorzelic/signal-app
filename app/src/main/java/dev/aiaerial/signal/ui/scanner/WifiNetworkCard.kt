@@ -77,7 +77,7 @@ fun WifiNetworkCard(
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Text(
-                        text = "${result.channelWidth}MHz",
+                        text = "${result.channelWidthMhz}MHz",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Text(

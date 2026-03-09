@@ -26,4 +26,16 @@ data class WifiScanResult(
             frequency in 5925..7125 -> "6 GHz"
             else -> "Unknown"
         }
+
+    /** Convert Android's channelWidth enum to MHz string. */
+    val channelWidthMhz: String
+        get() = when (channelWidth) {
+            0 -> "20"
+            1 -> "40"
+            2 -> "80"
+            3 -> "160"
+            4 -> "80+80"
+            5 -> "320"
+            else -> "?"
+        }
 }

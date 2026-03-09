@@ -5,12 +5,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 
 /**
@@ -27,6 +29,14 @@ fun SignalChart(
     val thresholdGood = Color(0xFF4CAF50)
     val thresholdFair = Color(0xFFFFC107)
     val thresholdPoor = Color(0xFFF44336)
+
+    val thresholdPaints = remember {
+        listOf(thresholdGood, thresholdFair, thresholdPoor).map { color ->
+            android.graphics.Paint().apply {
+                this.color = color.copy(alpha = 0.7f).toArgb()
+            }
+        }
+    }
 
     Canvas(
         modifier = modifier
@@ -46,7 +56,8 @@ fun SignalChart(
             -67 to thresholdFair,
             -80 to thresholdPoor,
         )
-        for ((dbm, color) in thresholds) {
+        val labelTextSize = 10.dp.toPx()
+        thresholds.forEachIndexed { index, (dbm, color) ->
             val y = dbmToY(dbm)
             drawLine(
                 color = color.copy(alpha = 0.4f),
@@ -59,10 +70,7 @@ fun SignalChart(
                 "${dbm}dBm",
                 4.dp.toPx(),
                 y - 2.dp.toPx(),
-                android.graphics.Paint().apply {
-                    this.color = color.copy(alpha = 0.7f).hashCode()
-                    textSize = 10.dp.toPx()
-                },
+                thresholdPaints[index].apply { textSize = labelTextSize },
             )
         }
 
