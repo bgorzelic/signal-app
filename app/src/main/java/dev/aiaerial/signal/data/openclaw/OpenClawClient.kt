@@ -15,6 +15,7 @@ import javax.inject.Singleton
 class OpenClawClient @Inject constructor(
     private val httpClient: OkHttpClient,
 ) {
+    @Volatile
     private var baseUrl = "http://127.0.0.1:18789"
 
     fun setBaseUrl(url: String) {
@@ -24,8 +25,9 @@ class OpenClawClient @Inject constructor(
     suspend fun healthCheck(): OpenClawStatus = withContext(Dispatchers.IO) {
         try {
             val request = Request.Builder().url("$baseUrl/").get().build()
-            val response = httpClient.newCall(request).execute()
-            if (response.isSuccessful) OpenClawStatus.CONNECTED else OpenClawStatus.DISCONNECTED
+            httpClient.newCall(request).execute().use { response ->
+                if (response.isSuccessful) OpenClawStatus.CONNECTED else OpenClawStatus.DISCONNECTED
+            }
         } catch (_: IOException) {
             OpenClawStatus.DISCONNECTED
         }
@@ -67,16 +69,21 @@ class OpenClawClient @Inject constructor(
             .post(body.toString().toRequestBody("application/json".toMediaType()))
             .build()
 
-        val response = httpClient.newCall(request).execute()
-        val responseBody = response.body?.string() ?: return "No response from OpenClaw"
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                return "OpenClaw error: HTTP ${response.code}"
+            }
+            val responseBody = response.body?.string() ?: return "No response from OpenClaw"
 
-        return try {
-            val json = Json.parseToJsonElement(responseBody).jsonObject
-            json["choices"]?.jsonArray?.firstOrNull()
-                ?.jsonObject?.get("message")?.jsonObject?.get("content")?.jsonPrimitive?.content
-                ?: responseBody
-        } catch (_: Exception) {
-            responseBody
+            return try {
+                val json = Json.parseToJsonElement(responseBody).jsonObject
+                json["choices"]?.jsonArray?.firstOrNull()
+                    ?.jsonObject?.get("message")?.jsonObject?.get("content")?.jsonPrimitive?.content
+                    ?: responseBody
+            } catch (e: Exception) {
+                if (e is kotlin.coroutines.cancellation.CancellationException) throw e
+                responseBody
+            }
         }
     }
 
