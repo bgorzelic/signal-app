@@ -30,7 +30,8 @@ class SyslogViewModel @Inject constructor(
     val filterText: StateFlow<String> = _filterText.asStateFlow()
 
     private var service: SyslogService? = null
-    private val allMessages = mutableListOf<SyslogMessage>()
+    private var isBound = false
+    private val allMessages = java.util.Collections.synchronizedList(mutableListOf<SyslogMessage>())
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
@@ -47,6 +48,7 @@ class SyslogViewModel @Inject constructor(
 
         override fun onServiceDisconnected(name: ComponentName) {
             service = null
+            isBound = false
             _isRunning.value = false
         }
     }
@@ -55,13 +57,25 @@ class SyslogViewModel @Inject constructor(
         val intent = Intent(context, SyslogService::class.java)
         context.startForegroundService(intent)
         context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        isBound = true
     }
 
     fun stopListening() {
-        context.unbindService(connection)
+        if (isBound) {
+            context.unbindService(connection)
+            isBound = false
+        }
         context.stopService(Intent(context, SyslogService::class.java))
         service = null
         _isRunning.value = false
+    }
+
+    override fun onCleared() {
+        if (isBound) {
+            context.unbindService(connection)
+            isBound = false
+        }
+        super.onCleared()
     }
 
     fun setFilter(text: String) {

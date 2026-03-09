@@ -14,10 +14,13 @@ import dev.aiaerial.signal.data.syslog.SyslogMessage
 import dev.aiaerial.signal.data.syslog.SyslogReceiver
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharedFlow
-import javax.inject.Inject
-
 @AndroidEntryPoint
 class SyslogService : Service() {
+
+    companion object {
+        private const val NOTIFICATION_ID = 1001
+        private const val CHANNEL_ID = "syslog_receiver"
+    }
 
     private val receiver = SyslogReceiver(port = 1514)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -39,9 +42,8 @@ class SyslogService : Service() {
     }
 
     private fun startForeground() {
-        val channelId = "syslog_receiver"
         val channel = NotificationChannel(
-            channelId, "Syslog Receiver",
+            CHANNEL_ID, "Syslog Receiver",
             NotificationManager.IMPORTANCE_LOW
         )
         val nm = getSystemService(NotificationManager::class.java)
@@ -53,7 +55,7 @@ class SyslogService : Service() {
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(this, channelId)
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("SIGNAL Syslog Receiver")
             .setContentText("Listening on UDP port 1514")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
@@ -61,9 +63,9 @@ class SyslogService : Service() {
             .build()
 
         if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         } else {
-            startForeground(1, notification)
+            startForeground(NOTIFICATION_ID, notification)
         }
     }
 

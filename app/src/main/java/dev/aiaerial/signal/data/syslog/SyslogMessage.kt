@@ -8,6 +8,7 @@ data class SyslogMessage(
     val message: String,
     val raw: String,
     val receivedAt: Long = System.currentTimeMillis(),
+    val id: String = java.util.UUID.randomUUID().toString(),
 ) {
     val severityLabel: String get() = severityName(severity)
 

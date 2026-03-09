@@ -15,10 +15,15 @@ class SyslogReceiver(
     private var job: Job? = null
 
     suspend fun start(scope: CoroutineScope) {
-        val selectorManager = SelectorManager(Dispatchers.IO)
-        val socket = aSocket(selectorManager).udp().bind(InetSocketAddress("0.0.0.0", port))
-
+        if (job != null) return // prevent double-start
         job = scope.launch(Dispatchers.IO) {
+            val selectorManager = SelectorManager(Dispatchers.IO)
+            val socket = try {
+                aSocket(selectorManager).udp().bind(InetSocketAddress("0.0.0.0", port))
+            } catch (e: Exception) {
+                selectorManager.close()
+                throw e
+            }
             try {
                 while (isActive) {
                     val datagram = socket.receive()

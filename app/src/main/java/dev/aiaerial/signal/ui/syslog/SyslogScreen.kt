@@ -65,7 +65,7 @@ fun SyslogScreen(
 
         // Messages list
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(messages, key = { "${it.receivedAt}-${it.raw.hashCode()}" }) { msg ->
+            items(messages, key = { it.id }) { msg ->
                 SyslogMessageRow(msg = msg, onClick = { onEventTap(msg) })
             }
         }
