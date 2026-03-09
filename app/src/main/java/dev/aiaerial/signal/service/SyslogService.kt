@@ -29,6 +29,7 @@ class SyslogService : Service() {
 
     private val receiver = SyslogReceiver(port = 1514)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var started = false
 
     val messages: SharedFlow<SyslogMessage> get() = receiver.messages
 
@@ -42,10 +43,17 @@ class SyslogService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground()
-        scope.launch { receiver.start(scope) }
-        scope.launch {
-            receiver.messages.collect { msg ->
-                eventPipeline.processSyslogMessage(msg)
+        if (!started) {
+            started = true
+            scope.launch { receiver.start(scope) }
+            scope.launch {
+                receiver.messages.collect { msg ->
+                    try {
+                        eventPipeline.processSyslogMessage(msg)
+                    } catch (e: Exception) {
+                        android.util.Log.e("SyslogService", "Failed to process message", e)
+                    }
+                }
             }
         }
         return START_STICKY

@@ -14,6 +14,7 @@ class EventPipeline @Inject constructor(
     private val vendorDetector: VendorDetector,
     private val dao: NetworkEventDao,
 ) {
+    @Volatile
     private var currentSessionId: String = UUID.randomUUID().toString()
 
     fun getSessionId(): String = currentSessionId
