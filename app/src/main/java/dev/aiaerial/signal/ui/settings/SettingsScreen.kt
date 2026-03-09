@@ -19,6 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -57,9 +60,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                var urlDraft by remember { mutableStateOf(openClawUrl) }
                 OutlinedTextField(
-                    value = openClawUrl,
-                    onValueChange = { viewModel.setOpenClawUrl(it) },
+                    value = urlDraft,
+                    onValueChange = { urlDraft = it },
                     label = { Text("Gateway URL") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
@@ -67,8 +71,11 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Button(onClick = { viewModel.checkOpenClawHealth() }) {
-                    Text("Test Connection")
+                Button(onClick = {
+                    viewModel.setOpenClawUrl(urlDraft)
+                    viewModel.checkOpenClawHealth()
+                }) {
+                    Text("Save & Test Connection")
                 }
             }
         }

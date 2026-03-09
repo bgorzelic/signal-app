@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.aiaerial.signal.data.openclaw.OpenClawClient
 import dev.aiaerial.signal.data.openclaw.OpenClawStatus
 import dev.aiaerial.signal.data.prefs.SignalPreferences
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,12 +28,15 @@ class SettingsViewModel @Inject constructor(
     private val _syslogPort = MutableStateFlow(prefs.syslogPort)
     val syslogPort: StateFlow<Int> = _syslogPort.asStateFlow()
 
+    private var healthCheckJob: Job? = null
+
     init {
         checkOpenClawHealth()
     }
 
     fun checkOpenClawHealth() {
-        viewModelScope.launch {
+        healthCheckJob?.cancel()
+        healthCheckJob = viewModelScope.launch {
             _openClawStatus.value = OpenClawStatus.CHECKING
             _openClawStatus.value = openClawClient.healthCheck()
         }
@@ -42,7 +46,6 @@ class SettingsViewModel @Inject constructor(
         _openClawUrl.value = url
         prefs.openClawUrl = url
         openClawClient.setBaseUrl(url)
-        checkOpenClawHealth()
     }
 
     fun setSyslogPort(port: Int) {
