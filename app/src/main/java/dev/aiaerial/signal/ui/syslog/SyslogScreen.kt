@@ -23,6 +23,7 @@ fun SyslogScreen(
     val messages by viewModel.messages.collectAsState()
     val isRunning by viewModel.isRunning.collectAsState()
     val filterText by viewModel.filterText.collectAsState()
+    val parsedEventCount by viewModel.parsedEventCount.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Controls row
@@ -47,6 +48,9 @@ fun SyslogScreen(
                 else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.weight(1f))
+            Text("$parsedEventCount parsed", style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.width(8.dp))
             Text("${messages.size}", style = MaterialTheme.typography.labelLarge)
         }
 

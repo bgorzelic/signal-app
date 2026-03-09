@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.aiaerial.signal.data.EventPipeline
 import dev.aiaerial.signal.data.syslog.SyslogMessage
 import dev.aiaerial.signal.service.SyslogService
 import kotlinx.coroutines.flow.*
@@ -18,6 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SyslogViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val eventPipeline: EventPipeline,
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<SyslogMessage>>(emptyList())
@@ -28,6 +30,9 @@ class SyslogViewModel @Inject constructor(
 
     private val _filterText = MutableStateFlow("")
     val filterText: StateFlow<String> = _filterText.asStateFlow()
+
+    val parsedEventCount: StateFlow<Int> = eventPipeline.eventCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     private var service: SyslogService? = null
     private var isBound = false

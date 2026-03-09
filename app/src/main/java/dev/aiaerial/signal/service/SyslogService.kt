@@ -10,12 +10,17 @@ import androidx.core.app.NotificationCompat
 import dagger.hilt.android.AndroidEntryPoint
 import dev.aiaerial.signal.MainActivity
 import dev.aiaerial.signal.R
+import dev.aiaerial.signal.data.EventPipeline
 import dev.aiaerial.signal.data.syslog.SyslogMessage
 import dev.aiaerial.signal.data.syslog.SyslogReceiver
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharedFlow
+import javax.inject.Inject
+
 @AndroidEntryPoint
 class SyslogService : Service() {
+
+    @Inject lateinit var eventPipeline: EventPipeline
 
     companion object {
         private const val NOTIFICATION_ID = 1001
@@ -38,6 +43,11 @@ class SyslogService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground()
         scope.launch { receiver.start(scope) }
+        scope.launch {
+            receiver.messages.collect { msg ->
+                eventPipeline.processSyslogMessage(msg)
+            }
+        }
         return START_STICKY
     }
 
