@@ -26,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import dev.aiaerial.signal.ui.logimport.LogImportScreen
 import dev.aiaerial.signal.ui.scanner.ScannerScreen
 import dev.aiaerial.signal.ui.syslog.SyslogScreen
 import dev.aiaerial.signal.ui.timeline.TimelineScreen
@@ -36,6 +37,7 @@ import kotlinx.serialization.Serializable
 @Serializable object SyslogRoute
 @Serializable object TimelineRoute
 @Serializable object SettingsRoute
+@Serializable object ImportRoute
 
 data class TopLevelRoute<T : Any>(
     val name: String,
@@ -93,7 +95,12 @@ fun SignalNavHost() {
                 ScannerScreen()
             }
             composable<SyslogRoute> {
-                SyslogScreen()
+                SyslogScreen(
+                    onImportClick = { navController.navigate(ImportRoute) },
+                )
+            }
+            composable<ImportRoute> {
+                LogImportScreen()
             }
             composable<TimelineRoute> {
                 TimelineScreen()

@@ -19,6 +19,7 @@ import java.util.*
 fun SyslogScreen(
     viewModel: SyslogViewModel = hiltViewModel(),
     onEventTap: (SyslogMessage) -> Unit = {},
+    onImportClick: () -> Unit = {},
 ) {
     val messages by viewModel.messages.collectAsState()
     val isRunning by viewModel.isRunning.collectAsState()
@@ -39,6 +40,10 @@ fun SyslogScreen(
                 }
             ) {
                 Text(if (isRunning) "Stop" else "Start Listening")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            OutlinedButton(onClick = onImportClick) {
+                Text("Import")
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
