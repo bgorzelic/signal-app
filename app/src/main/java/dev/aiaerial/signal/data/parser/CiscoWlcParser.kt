@@ -19,6 +19,9 @@ class CiscoWlcParser : VendorParser {
 
     private val CISCO_INDICATORS = """apfMsConnTask|%DOT11|%DOT1X|%CLIENT_ORCH|wncd:|capwap""".toRegex(RegexOption.IGNORE_CASE)
 
+    private val AP_NAME_PARENS = """AP\s+name\s+\(([^)]+)\)""".toRegex(RegexOption.IGNORE_CASE)
+    private val AP_NAME_MAP = """MAP\s+([A-Za-z0-9_\-]+)""".toRegex()
+
     override fun canParse(line: String): Boolean = CISCO_INDICATORS.containsMatchIn(line)
 
     override fun parse(line: String, sessionId: String): NetworkEvent? {
@@ -55,12 +58,8 @@ class CiscoWlcParser : VendorParser {
     }
 
     private fun extractApName(line: String): String? {
-        val nameInParens = """AP\s+name\s+\(([^)]+)\)""".toRegex(RegexOption.IGNORE_CASE).find(line)
-        if (nameInParens != null) return nameInParens.groupValues[1]
-
-        val mapPattern = """MAP\s+([A-Za-z0-9_\-]+)""".toRegex().find(line)
-        if (mapPattern != null) return mapPattern.groupValues[1]
-
+        AP_NAME_PARENS.find(line)?.let { return it.groupValues[1] }
+        AP_NAME_MAP.find(line)?.let { return it.groupValues[1] }
         return null
     }
 }

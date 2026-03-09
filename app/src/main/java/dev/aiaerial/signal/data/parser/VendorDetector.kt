@@ -1,5 +1,6 @@
 package dev.aiaerial.signal.data.parser
 
+import dev.aiaerial.signal.data.model.NetworkEvent
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,7 +12,7 @@ class VendorDetector @Inject constructor() {
         // Future: ArubaParser(), MerakiParser(), etc.
     )
 
-    fun parse(line: String, sessionId: String): dev.aiaerial.signal.data.model.NetworkEvent? {
+    fun parse(line: String, sessionId: String): NetworkEvent? {
         for (parser in parsers) {
             if (parser.canParse(line)) {
                 return parser.parse(line, sessionId)
