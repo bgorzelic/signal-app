@@ -24,6 +24,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,6 +52,7 @@ fun TimelineScreen(viewModel: TimelineViewModel = hiltViewModel()) {
     val selectedClient by viewModel.selectedClient.collectAsState()
     val events by viewModel.clientEvents.collectAsState()
     val allEvents by viewModel.allSessionEvents.collectAsState()
+    val apAssociations by viewModel.apAssociations.collectAsState()
     val exportResult by viewModel.exportResult.collectAsState()
 
     val context = LocalContext.current
@@ -117,58 +120,100 @@ fun TimelineScreen(viewModel: TimelineViewModel = hiltViewModel()) {
                 }
             }
 
-            // Client picker
-            Text(
-                "Select client MAC:",
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
-
-            var expanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-            ) {
-                OutlinedTextField(
-                    value = selectedClient ?: "Select a client...",
-                    onValueChange = {},
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                ) {
-                    clients.forEach { mac ->
-                        DropdownMenuItem(
-                            text = { Text(mac) },
-                            onClick = {
-                                viewModel.selectClient(mac)
-                                expanded = false
-                            },
-                        )
-                    }
+            // View mode tabs
+            var selectedTab by remember { mutableStateOf(0) }
+            TabRow(selectedTabIndex = selectedTab) {
+                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
+                    Text("Client Journey", modifier = Modifier.padding(12.dp))
+                }
+                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
+                    Text("AP Map", modifier = Modifier.padding(12.dp))
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            when (selectedTab) {
+                0 -> {
+                    // Client picker
+                    Text(
+                        "Select client MAC:",
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(start = 16.dp, top = 8.dp),
+                    )
 
-            if (events.isNotEmpty()) {
-                Text(
-                    "${events.size} events for ${selectedClient ?: ""}",
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-            }
+                    var expanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = !expanded },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = selectedClient ?: "Select a client...",
+                            onValueChange = {},
+                            readOnly = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                        ) {
+                            clients.forEach { mac ->
+                                DropdownMenuItem(
+                                    text = { Text(mac) },
+                                    onClick = {
+                                        viewModel.selectClient(mac)
+                                        expanded = false
+                                    },
+                                )
+                            }
+                        }
+                    }
 
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(events, key = { it.id }) { event ->
-                    RoamingTimelineCard(event = event)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (events.isNotEmpty()) {
+                        Text(
+                            "${events.size} events for ${selectedClient ?: ""}",
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                    }
+
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(events, key = { it.id }) { event ->
+                            RoamingTimelineCard(event = event)
+                        }
+                    }
+                }
+
+                1 -> {
+                    // AP association map
+                    if (apAssociations.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("No active AP associations in this session.")
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                        ) {
+                            items(
+                                items = apAssociations,
+                                key = { it.apName },
+                            ) { association ->
+                                ApMapCard(association = association)
+                            }
+                        }
+                    }
                 }
             }
         }

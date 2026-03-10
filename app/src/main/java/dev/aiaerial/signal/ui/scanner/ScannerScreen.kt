@@ -41,6 +41,7 @@ fun ScannerScreen(
     val connectionInfo by viewModel.connectionInfo.collectAsStateWithLifecycle()
     val rssiHistory by viewModel.rssiHistory.collectAsStateWithLifecycle()
     val smoothedHistory by viewModel.smoothedRssiHistory.collectAsStateWithLifecycle()
+    val channelUtilization by viewModel.channelUtilization.collectAsStateWithLifecycle()
 
     var permissionsGranted by remember { mutableStateOf(false) }
 
@@ -137,6 +138,14 @@ fun ScannerScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 SignalChart(dataPoints = rssiHistory, smoothedPoints = smoothedHistory)
+            }
+        }
+
+        // Channel utilization
+        item {
+            if (channelUtilization.isNotEmpty()) {
+                ChannelUtilizationCard(utilization = channelUtilization)
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
 

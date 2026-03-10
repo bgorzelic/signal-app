@@ -6,9 +6,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.aiaerial.signal.data.EventPipeline
 import dev.aiaerial.signal.data.export.SessionExporter
 import dev.aiaerial.signal.data.local.SessionSummary
+import dev.aiaerial.signal.data.model.ApAssociation
 import dev.aiaerial.signal.data.model.NetworkEvent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,6 +54,13 @@ class TimelineViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val allSessionEvents: StateFlow<List<NetworkEvent>> = _selectedSessionId
         .flatMapLatest { sid -> pipeline.eventsForSession(sid) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val apAssociations: StateFlow<List<ApAssociation>> = _selectedSessionId
+        .flatMapLatest { sid ->
+            pipeline.eventsForSession(sid).map { events -> ApAssociation.fromEvents(events) }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
