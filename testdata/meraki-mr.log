@@ -1,0 +1,6 @@
+1 1678400000.123456 MR-Floor2 events type=association radio=1 vap=0 channel=36 rssi=28 aid=1234567890 mac=AA:BB:CC:DD:EE:FF
+1 1678400005.111111 MR-Floor3 events type=reassociation radio=0 vap=0 channel=149 rssi=22 mac=AA:BB:CC:DD:EE:FF
+1 1678400010.654321 MR-Floor2 events type=disassociation radio=1 vap=0 channel=36 aid=1234567890 mac=AA:BB:CC:DD:EE:FF reason=8
+1 1678400020.111111 MR-Lobby events type=8021x_auth identity=user@corp mac=11:22:33:44:55:66
+1 1678400030.222222 MR-Lobby events type=8021x_deauth identity=user@corp mac=11:22:33:44:55:66
+1 1678400040.333333 MR-Guest events type=splash_auth mac=AA:BB:CC:DD:EE:FF

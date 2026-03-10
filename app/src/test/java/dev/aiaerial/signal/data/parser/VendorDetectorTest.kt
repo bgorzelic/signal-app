@@ -27,6 +27,15 @@ class VendorDetectorTest {
     }
 
     @Test
+    fun `detects Meraki and routes to MerakiParser`() {
+        val line = "1 1678400000.123456 MR-Floor2 events type=association radio=1 " +
+            "channel=36 rssi=28 mac=AA:BB:CC:DD:EE:FF"
+        val event = detector.parse(line, "s1")
+        assertNotNull(event)
+        assertEquals(Vendor.MERAKI, event!!.vendor)
+    }
+
+    @Test
     fun `returns null for unknown vendor`() {
         val line = "some random log line that is not from any known vendor"
         assertNull(detector.parse(line, "s1"))
