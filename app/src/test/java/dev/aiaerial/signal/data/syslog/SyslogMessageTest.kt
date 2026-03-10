@@ -30,5 +30,35 @@ class SyslogMessageTest {
         assertEquals("warning", SyslogMessage.severityName(4))
         assertEquals("error", SyslogMessage.severityName(3))
         assertEquals("critical", SyslogMessage.severityName(2))
+        assertEquals("emergency", SyslogMessage.severityName(0))
+        assertEquals("alert", SyslogMessage.severityName(1))
+        assertEquals("notice", SyslogMessage.severityName(5))
+        assertEquals("debug", SyslogMessage.severityName(7))
+        assertEquals("unknown", SyslogMessage.severityName(-1))
+    }
+
+    @Test
+    fun `parse high severity message`() {
+        val raw = "<27>Mar  9 12:00:00 wlc-9800 %DOT11-3-DEAUTH: Station aa:bb:cc:dd:ee:ff"
+        val msg = SyslogMessage.parse(raw)
+        assertEquals(27, msg.priority)
+        assertEquals(3, msg.facility) // 27 / 8
+        assertEquals(3, msg.severity) // 27 % 8 = error
+        assertEquals("error", msg.severityLabel)
+    }
+
+    @Test
+    fun `parse empty message body`() {
+        val msg = SyslogMessage.parse("")
+        assertEquals(-1, msg.priority)
+        assertNull(msg.hostname)
+        assertEquals("", msg.message)
+    }
+
+    @Test
+    fun `raw field preserved exactly`() {
+        val raw = "<134>Mar  9 12:00:00 host msg with <special> chars & stuff"
+        val msg = SyslogMessage.parse(raw)
+        assertEquals(raw, msg.raw)
     }
 }

@@ -9,8 +9,12 @@ import kotlinx.coroutines.flow.*
 class SyslogReceiver(
     private val port: Int = 1514,
 ) {
-    private val _messages = MutableSharedFlow<SyslogMessage>(extraBufferCapacity = 256)
+    private val _messages = MutableSharedFlow<SyslogMessage>(extraBufferCapacity = 1024)
     val messages: SharedFlow<SyslogMessage> = _messages.asSharedFlow()
+
+    @Volatile
+    var droppedCount: Long = 0
+        private set
 
     private var job: Job? = null
 
@@ -29,7 +33,9 @@ class SyslogReceiver(
                     val datagram = socket.receive()
                     val raw = datagram.packet.readText()
                     val message = SyslogMessage.parse(raw.trim())
-                    _messages.emit(message)
+                    if (!_messages.tryEmit(message)) {
+                        droppedCount++
+                    }
                 }
             } finally {
                 socket.close()

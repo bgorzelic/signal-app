@@ -62,4 +62,57 @@ class CiscoWlcParserTest {
         val event = parser.parse(line, "session-1")
         assertNull(event)
     }
+
+    @Test
+    fun `parse DEAUTH event`() {
+        val line = "*apfMsConnTask_3: Mar 09 10:30:00: %DOT11-4-DEAUTH: " +
+            "Station aa:bb:cc:dd:ee:ff Deauthenticated reason 1"
+        val event = parser.parse(line, "session-1")
+        assertNotNull(event)
+        assertEquals(EventType.DEAUTH, event!!.eventType)
+        assertEquals("aa:bb:cc:dd:ee:ff", event.clientMac)
+        assertEquals(1, event.reasonCode)
+    }
+
+    @Test
+    fun `canParse returns true for wncd capwap lines`() {
+        assertTrue(parser.canParse("wncd: some client message"))
+        assertTrue(parser.canParse("capwap: AP joined"))
+        assertFalse(parser.canParse("random line with no cisco indicators"))
+    }
+
+    @Test
+    fun `parse extracts rssi with parentheses`() {
+        val line = "*apfMsConnTask_6: %CLIENT_ORCH_LOG-6-CLIENT_ADDED_TO_RUN_STATE: " +
+            "wncd: client aa:bb:cc:dd:ee:ff joined with ssid CorpWiFi " +
+            "AP name (AP-Test) rssi (-75) channel (149)"
+        val event = parser.parse(line, "s1")
+        assertNotNull(event)
+        assertEquals(-75, event!!.rssi)
+        assertEquals(149, event.channel)
+        assertEquals("AP-Test", event.apName)
+    }
+
+    @Test
+    fun `returns null when cisco indicator present but no event type matches`() {
+        val line = "wncd: some informational message about radio resource management"
+        val event = parser.parse(line, "s1")
+        assertNull(event)
+    }
+
+    @Test
+    fun `session ID is propagated to event`() {
+        val line = "*apfMsConnTask_0: %DOT11-6-ASSOC: Station aa:bb:cc:dd:ee:ff Associated MAP AP-1 slot 0"
+        val event = parser.parse(line, "my-session-42")
+        assertNotNull(event)
+        assertEquals("my-session-42", event!!.sessionId)
+    }
+
+    @Test
+    fun `MAC address extraction is case insensitive`() {
+        val line = "*apfMsConnTask_0: %DOT11-6-ASSOC: Station AA:BB:CC:DD:EE:FF Associated MAP AP-1 slot 0"
+        val event = parser.parse(line, "s1")
+        assertNotNull(event)
+        assertEquals("AA:BB:CC:DD:EE:FF", event!!.clientMac)
+    }
 }

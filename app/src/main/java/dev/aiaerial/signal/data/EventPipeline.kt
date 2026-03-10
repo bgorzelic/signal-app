@@ -32,7 +32,8 @@ class EventPipeline @Inject constructor(
 
     fun getSessionId(): String = currentSessionId
 
-    fun newSession(): String {
+    suspend fun newSession(): String {
+        flush() // persist events from the previous session before switching
         currentSessionId = UUID.randomUUID().toString()
         return currentSessionId
     }
