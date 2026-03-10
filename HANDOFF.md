@@ -331,19 +331,9 @@ SIGNAL's syslog listener must stay alive continuously while a wireless engineer 
 
 1. **Cisco-only parsing.** Only `CiscoWlcParser` exists. Aruba, Meraki, Ruckus, and Juniper syslog formats are not yet handled. The `VendorParser` interface and `VendorDetector` router are ready for new parsers.
 
-2. **No export UI.** `SessionExporter` has `toCsv()`/`toJson()` methods with proper field escaping, but there's no Share button in the UI yet. Events can be exported programmatically.
+2. **WiFi scanning uses deprecated APIs.** `WifiManager.startScan()` and `WifiManager.connectionInfo` are deprecated. They still work on Android 16 but may be removed. Replacements: `registerScanResultsCallback()` and `ConnectivityManager.NetworkCallback`.
 
-3. **No database migration strategy for production.** Room uses `fallbackToDestructiveMigration()` — any schema change in development wipes the database. Before shipping to other users, proper `Migration` objects are needed.
-
-4. **No session persistence across app restarts.** `EventPipeline.currentSessionId` is a UUID generated at app start. Previous session data exists in Room but there's no session picker UI to browse historical sessions.
-
-5. **WiFi scanning uses deprecated APIs.** `WifiManager.startScan()` and `WifiManager.connectionInfo` are deprecated. They still work on Android 16 but may be removed. Replacements: `registerScanResultsCallback()` and `ConnectivityManager.NetworkCallback`.
-
-6. **No R8/ProGuard.** Minification is disabled. APK is larger than necessary (~5MB from `material-icons-extended` alone). When enabling R8, keep rules are needed for Hilt, Room, kotlinx.serialization, and Ktor.
-
-7. **SyslogViewModel message list is not thread-safe.** `allMessages` is a plain `ArrayDeque` accessed from both the coroutine collector (IO dispatcher via service SharedFlow) and UI thread (clearMessages). Should use a Mutex or single-writer pattern.
-
-8. **No data retention policy.** Room database grows indefinitely. Extended capture sessions with high message rates will eventually consume significant storage. Need a purge strategy (e.g., delete sessions older than 30 days).
+3. **Destructive migration fallback still active.** `fallbackToDestructiveMigration()` is retained during v0.x. Must be removed before v1.0 — all schema changes must use explicit migrations by then.
 
 ## Performance Considerations
 
@@ -491,9 +481,9 @@ See `docs/audit-report.md` for the full technical audit. Key findings:
 
 ## Future Roadmap
 
-### Near-term (v0.2)
-1. Add Share/Export button for session data (CSV/JSON via Android Share sheet)
-2. Add session picker for historical session browsing
+### Near-term (v0.2) — DONE
+1. ~~Share/Export button for session data (CSV/JSON via Android Share sheet)~~ DONE
+2. ~~Session picker for historical session browsing~~ DONE
 3. Add Aruba parser (ArubaOS-CX syslog format)
 
 ### Medium-term (v0.3)
@@ -520,7 +510,8 @@ See `docs/audit-report.md` for the full technical audit. Key findings:
 Full engineering audit and documentation improvement pass. Analyzed all 42 source files and 7 test files. Rewrote HANDOFF.md with comprehensive architecture documentation.
 
 ### Current Session
-Targeted remediation pass for 6 open audit items. Verified each against actual code, implemented fixes for Room migration, R8, data retention. Confirmed SyslogViewModel thread safety was already fixed and EventPipeline race is benign. Added 12 new unit tests (EventPipelineTest: 8, DataRetentionManagerTest: 4). Total: 49 tests, 0 failures. Created audit reports and validation checklist. See `docs/audits/2026-03-signal-remediation.md` for full details.
+1. Targeted remediation pass for 6 open audit items (Room migration, R8, data retention, tests). See `docs/audits/2026-03-signal-remediation.md`.
+2. Implemented v0.2 features: session picker (browse historical sessions) and CSV/JSON export via Android Share sheet on Timeline screen.
 
 ## Blockers
 

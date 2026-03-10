@@ -1,22 +1,32 @@
 package dev.aiaerial.signal.ui.timeline
 
+import android.content.Intent
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,18 +34,55 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimelineScreen(viewModel: TimelineViewModel = hiltViewModel()) {
+    val sessions by viewModel.sessions.collectAsState()
+    val selectedSessionId by viewModel.selectedSessionId.collectAsState()
     val clients by viewModel.clients.collectAsState()
     val selectedClient by viewModel.selectedClient.collectAsState()
     val events by viewModel.clientEvents.collectAsState()
+    val allEvents by viewModel.allSessionEvents.collectAsState()
+    val exportResult by viewModel.exportResult.collectAsState()
+
+    val context = LocalContext.current
+    val dateFormat = remember { SimpleDateFormat("MMM d, HH:mm", Locale.US) }
+
+    // Handle export result via Android Share sheet
+    LaunchedEffect(exportResult) {
+        exportResult?.let { (mimeType, content) ->
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(Intent.EXTRA_TEXT, content)
+                putExtra(
+                    Intent.EXTRA_SUBJECT,
+                    "SIGNAL session export"
+                )
+            }
+            context.startActivity(Intent.createChooser(intent, "Export session data"))
+            viewModel.clearExportResult()
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (clients.isEmpty()) {
+        // Session picker
+        if (sessions.size > 1) {
+            SessionPicker(
+                sessions = sessions,
+                selectedSessionId = selectedSessionId,
+                dateFormat = dateFormat,
+                onSelect = { viewModel.selectSession(it) },
+            )
+        }
+
+        if (clients.isEmpty() && allEvents.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -43,13 +90,40 @@ fun TimelineScreen(viewModel: TimelineViewModel = hiltViewModel()) {
                 Text("No clients detected yet.\nStart the syslog receiver to capture roaming events.")
             }
         } else {
+            // Export row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    "${allEvents.size} events in session",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row {
+                    TextButton(onClick = { viewModel.exportCsv() }) {
+                        Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("CSV")
+                    }
+                    TextButton(onClick = { viewModel.exportJson() }) {
+                        Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("JSON")
+                    }
+                }
+            }
+
+            // Client picker
             Text(
                 "Select client MAC:",
                 style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
 
-            // Dropdown for client selection
             var expanded by remember { mutableStateOf(false) }
             ExposedDropdownMenuBox(
                 expanded = expanded,
@@ -86,7 +160,7 @@ fun TimelineScreen(viewModel: TimelineViewModel = hiltViewModel()) {
 
             if (events.isNotEmpty()) {
                 Text(
-                    "${events.size} events",
+                    "${events.size} events for ${selectedClient ?: ""}",
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
@@ -96,6 +170,65 @@ fun TimelineScreen(viewModel: TimelineViewModel = hiltViewModel()) {
                 items(events, key = { it.id }) { event ->
                     RoamingTimelineCard(event = event)
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SessionPicker(
+    sessions: List<dev.aiaerial.signal.data.local.SessionSummary>,
+    selectedSessionId: String,
+    dateFormat: SimpleDateFormat,
+    onSelect: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedSession = sessions.find { it.sessionId == selectedSessionId }
+    val label = selectedSession?.let {
+        "${dateFormat.format(Date(it.timestamp))} (${it.eventCount} events)"
+    } ?: "Current session"
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        OutlinedTextField(
+            value = label,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Session") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            sessions.forEach { session ->
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(
+                                dateFormat.format(Date(session.timestamp)),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Text(
+                                "${session.eventCount} events",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                    onClick = {
+                        onSelect(session.sessionId)
+                        expanded = false
+                    },
+                )
             }
         }
     }

@@ -78,10 +78,21 @@ class EventPipeline @Inject constructor(
 
     fun eventsForCurrentSession(): Flow<List<NetworkEvent>> = dao.getBySession(currentSessionId)
 
+    fun eventsForSession(sessionId: String): Flow<List<NetworkEvent>> = dao.getBySession(sessionId)
+
     fun clientJourney(mac: String): Flow<List<NetworkEvent>> =
         dao.getClientJourney(currentSessionId, mac)
 
+    fun clientJourney(sessionId: String, mac: String): Flow<List<NetworkEvent>> =
+        dao.getClientJourney(sessionId, mac)
+
     fun distinctClients(): Flow<List<String>> = dao.getDistinctClients(currentSessionId)
 
+    fun distinctClients(sessionId: String): Flow<List<String>> = dao.getDistinctClients(sessionId)
+
     fun eventCount(): Flow<Int> = dao.getEventCount(currentSessionId)
+
+    fun eventCount(sessionId: String): Flow<Int> = dao.getEventCount(sessionId)
+
+    suspend fun sessionSummaries() = dao.getSessionSummaries()
 }
