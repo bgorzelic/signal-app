@@ -1,5 +1,10 @@
 package dev.aiaerial.signal.ui.syslog
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,9 +12,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.aiaerial.signal.data.syslog.SyslogMessage
 import java.text.SimpleDateFormat
@@ -26,6 +33,24 @@ fun SyslogScreen(
     val filterText by viewModel.filterText.collectAsState()
     val parsedEventCount by viewModel.parsedEventCount.collectAsState()
 
+    val context = LocalContext.current
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* granted or not, start the service either way — notification just won't show */
+        viewModel.startListening()
+    }
+
+    fun startWithPermissionCheck() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            viewModel.startListening()
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         // Controls row
         Row(
@@ -36,7 +61,7 @@ fun SyslogScreen(
         ) {
             Button(
                 onClick = {
-                    if (isRunning) viewModel.stopListening() else viewModel.startListening()
+                    if (isRunning) viewModel.stopListening() else startWithPermissionCheck()
                 }
             ) {
                 Text(if (isRunning) "Stop" else "Start Listening")

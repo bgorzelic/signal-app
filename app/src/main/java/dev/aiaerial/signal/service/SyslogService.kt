@@ -9,8 +9,8 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import dagger.hilt.android.AndroidEntryPoint
 import dev.aiaerial.signal.MainActivity
-import dev.aiaerial.signal.R
 import dev.aiaerial.signal.data.EventPipeline
+import dev.aiaerial.signal.data.prefs.SignalPreferences
 import dev.aiaerial.signal.data.syslog.SyslogMessage
 import dev.aiaerial.signal.data.syslog.SyslogReceiver
 import kotlinx.coroutines.*
@@ -21,17 +21,18 @@ import javax.inject.Inject
 class SyslogService : Service() {
 
     @Inject lateinit var eventPipeline: EventPipeline
+    @Inject lateinit var prefs: SignalPreferences
 
     companion object {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "syslog_receiver"
     }
 
-    private val receiver = SyslogReceiver(port = 1514)
+    private var receiver: SyslogReceiver? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var started = false
 
-    val messages: SharedFlow<SyslogMessage> get() = receiver.messages
+    val messages: SharedFlow<SyslogMessage>? get() = receiver?.messages
 
     inner class LocalBinder : Binder() {
         val service: SyslogService get() = this@SyslogService
@@ -42,12 +43,14 @@ class SyslogService : Service() {
     override fun onBind(intent: Intent): IBinder = binder
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground()
         if (!started) {
             started = true
-            scope.launch { receiver.start(scope) }
+            val port = prefs.syslogPort
+            receiver = SyslogReceiver(port = port)
+            startForeground(port)
+            scope.launch { receiver!!.start(scope) }
             scope.launch {
-                receiver.messages.collect { msg ->
+                receiver!!.messages.collect { msg ->
                     try {
                         eventPipeline.processSyslogMessage(msg)
                     } catch (e: kotlin.coroutines.cancellation.CancellationException) {
@@ -61,7 +64,7 @@ class SyslogService : Service() {
         return START_STICKY
     }
 
-    private fun startForeground() {
+    private fun startForeground(port: Int) {
         val channel = NotificationChannel(
             CHANNEL_ID, "Syslog Receiver",
             NotificationManager.IMPORTANCE_LOW
@@ -77,7 +80,7 @@ class SyslogService : Service() {
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("SIGNAL Syslog Receiver")
-            .setContentText("Listening on UDP port 1514")
+            .setContentText("Listening on UDP port $port")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentIntent(pendingIntent)
             .build()
@@ -90,7 +93,7 @@ class SyslogService : Service() {
     }
 
     override fun onDestroy() {
-        receiver.stop()
+        receiver?.stop()
         scope.cancel()
         super.onDestroy()
     }

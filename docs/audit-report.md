@@ -242,15 +242,15 @@ The app uses only 5 icons (Wifi, Message, Timeline, Settings, ArrowBack). The ex
 
 ## Recommendations Summary
 
-| Priority | Issue | Effort |
-|---|---|---|
-| High | I2: CancellationException in SyslogService | 5 min |
-| High | I1: POST_NOTIFICATIONS runtime permission | 30 min |
-| High | C3: Wire syslog port to preferences | 15 min |
-| Medium | I6: Database migration strategy | 15 min |
-| Medium | C2: SyslogReceiver idempotency | 15 min |
-| Medium | M2: Fix version to 0.1.0 | 2 min |
-| Medium | M1: Delete scaffold test files | 2 min |
-| Low | I5: Migrate deprecated WiFi APIs | 2 hours |
-| Low | I7: SharedFlow burst handling | 30 min |
-| Low | M5: Remove extended icons or enable R8 | 30 min |
+| Priority | Issue | Effort | Status |
+|---|---|---|---|
+| High | I2: CancellationException in SyslogService | 5 min | FIXED |
+| High | I1: POST_NOTIFICATIONS runtime permission | 30 min | FIXED |
+| High | C3: Wire syslog port to preferences | 15 min | FIXED |
+| Medium | I6: Database migration strategy | 15 min | FIXED |
+| Medium | C2: SyslogReceiver idempotency | 15 min | FIXED |
+| Medium | M2: Fix version to 0.1.0 | 2 min | FIXED |
+| Medium | M1: Delete scaffold test files | 2 min | FIXED |
+| Low | I5: Migrate deprecated WiFi APIs | 2 hours | Open |
+| Low | I7: SharedFlow burst handling | 30 min | Open |
+| Low | M5: Remove extended icons or enable R8 | 30 min | Open |
