@@ -18,6 +18,15 @@ class VendorDetectorTest {
     }
 
     @Test
+    fun `detects Aruba and routes to ArubaParser`() {
+        val line = "<134>Mar 10 14:00:01 mc-aruba stm[1234]: <501051> Station aa:bb:cc:dd:ee:ff " +
+            "Associated to AP ap-floor2 BSSID 00:11:22:33:44:55 SSID CorpWiFi channel 36"
+        val event = detector.parse(line, "s1")
+        assertNotNull(event)
+        assertEquals(Vendor.ARUBA, event!!.vendor)
+    }
+
+    @Test
     fun `returns null for unknown vendor`() {
         val line = "some random log line that is not from any known vendor"
         assertNull(detector.parse(line, "s1"))

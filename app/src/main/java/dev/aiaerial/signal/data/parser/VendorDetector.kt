@@ -9,7 +9,8 @@ class VendorDetector @Inject constructor() {
 
     private val parsers: List<VendorParser> = listOf(
         CiscoWlcParser(),
-        // Future: ArubaParser(), MerakiParser(), etc.
+        ArubaParser(),
+        // Future: MerakiParser(), RuckusParser(), etc.
     )
 
     fun parse(line: String, sessionId: String): NetworkEvent? {

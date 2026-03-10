@@ -1,0 +1,7 @@
+<134>Mar 10 14:00:01 mc-aruba stm[1234]: <501051> Station aa:bb:cc:dd:ee:ff Associated to AP ap-floor2 BSSID 00:11:22:33:44:55 SSID CorpWiFi channel 36
+<134>Mar 10 14:00:15 mc-aruba stm[1234]: <501058> Station aa:bb:cc:dd:ee:ff Roamed to AP ap-floor3 BSSID 00:11:22:33:44:99 channel 149 rssi -62
+<134>Mar 10 14:00:30 mc-aruba stm[1234]: <501080> Station aa:bb:cc:dd:ee:ff Deauthenticated from AP ap-floor3 reason 1
+<134>Mar 10 14:00:45 mc-aruba authmgr[5678]: <522006> User Authentication Failed: MAC=11:22:33:44:55:66 reason=timeout
+<134>Mar 10 14:01:00 mc-aruba authmgr[5678]: <522008> User Authentication Successful: MAC=11:22:33:44:55:66
+<134>Mar 10 14:01:15 mc-aruba stm[1234]: <501051> Station 11:22:33:44:55:66 Associated to AP ap-lobby BSSID 00:11:22:33:44:10 SSID GuestWiFi channel 1
+<134>Mar 10 14:01:30 mc-aruba stm[1234]: <501093> Station 11:22:33:44:55:66 Disassociated from AP ap-lobby reason 8
