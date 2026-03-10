@@ -19,10 +19,12 @@ import androidx.compose.ui.unit.dp
  * Canvas-based RSSI line chart.
  * Y-axis range: -90 to -30 dBm.
  * Threshold lines at -50, -67, -80 dBm.
+ * Shows raw data (faded) and smoothed trend (solid) when both are provided.
  */
 @Composable
 fun SignalChart(
     dataPoints: List<Pair<Long, Int>>,
+    smoothedPoints: List<Pair<Long, Int>> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
     val lineColor = MaterialTheme.colorScheme.primary
@@ -65,7 +67,6 @@ fun SignalChart(
                 end = Offset(size.width, y),
                 strokeWidth = 1.dp.toPx(),
             )
-            // Label
             drawContext.canvas.nativeCanvas.drawText(
                 "${dbm}dBm",
                 4.dp.toPx(),
@@ -74,8 +75,9 @@ fun SignalChart(
             )
         }
 
-        // Data line
+        // Raw data line (faded when smoothed line is also shown)
         if (dataPoints.size >= 2) {
+            val rawAlpha = if (smoothedPoints.size >= 2) 0.3f else 1f
             val path = Path()
             val step = size.width / (dataPoints.size - 1).coerceAtLeast(1)
 
@@ -87,8 +89,26 @@ fun SignalChart(
 
             drawPath(
                 path = path,
+                color = lineColor.copy(alpha = rawAlpha),
+                style = Stroke(width = 1.5f.dp.toPx()),
+            )
+        }
+
+        // Smoothed trend line (solid, thicker)
+        if (smoothedPoints.size >= 2) {
+            val path = Path()
+            val step = size.width / (smoothedPoints.size - 1).coerceAtLeast(1)
+
+            smoothedPoints.forEachIndexed { index, (_, rssi) ->
+                val x = index * step
+                val y = dbmToY(rssi)
+                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+
+            drawPath(
+                path = path,
                 color = lineColor,
-                style = Stroke(width = 2.dp.toPx()),
+                style = Stroke(width = 2.5f.dp.toPx()),
             )
         }
     }

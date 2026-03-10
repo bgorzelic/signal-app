@@ -40,6 +40,7 @@ fun ScannerScreen(
     val scanResults by viewModel.scanResults.collectAsStateWithLifecycle()
     val connectionInfo by viewModel.connectionInfo.collectAsStateWithLifecycle()
     val rssiHistory by viewModel.rssiHistory.collectAsStateWithLifecycle()
+    val smoothedHistory by viewModel.smoothedRssiHistory.collectAsStateWithLifecycle()
 
     var permissionsGranted by remember { mutableStateOf(false) }
 
@@ -135,7 +136,7 @@ fun ScannerScreen(
                     fontWeight = FontWeight.Bold,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                SignalChart(dataPoints = rssiHistory)
+                SignalChart(dataPoints = rssiHistory, smoothedPoints = smoothedHistory)
             }
         }
 
