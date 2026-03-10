@@ -1,21 +1,58 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ============================================================================
+# SIGNAL App — ProGuard / R8 Rules
+# ============================================================================
+# These rules ensure R8 doesn't break runtime behavior for libraries that use
+# reflection, annotation processing, or serialization.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# --- Stack traces -----------------------------------------------------------
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# --- Kotlin ----------------------------------------------------------------
+# Keep Kotlin metadata for reflection (used by serialization, Hilt)
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
+-keep class kotlin.Metadata { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# --- Hilt / Dagger ---------------------------------------------------------
+# Hilt generates code that R8 must not remove or rename.
+# The Hilt Gradle plugin adds most rules automatically, but keep entry points:
+-keep,allowobfuscation @dagger.hilt.android.AndroidEntryPoint class *
+-keep,allowobfuscation @dagger.hilt.android.HiltAndroidApp class *
+
+# --- Room -------------------------------------------------------------------
+# Room DAO interfaces and entity classes use annotations processed at compile time.
+# R8 must not strip annotated fields or rename entity columns.
+-keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Entity class *
+-keep @androidx.room.Dao interface *
+
+# --- kotlinx.serialization --------------------------------------------------
+# Serialization uses @Serializable annotation + generated serializers.
+-keepattributes RuntimeVisibleAnnotations
+-keep class kotlinx.serialization.** { *; }
+-keepclassmembers @kotlinx.serialization.Serializable class ** {
+    *** Companion;
+    *** serializer(...);
+    kotlinx.serialization.KSerializer $$serializer(...);
+}
+
+# --- Ktor -------------------------------------------------------------------
+# Ktor uses reflection for engine initialization and socket operations.
+-keep class io.ktor.** { *; }
+-dontwarn io.ktor.**
+
+# --- OkHttp -----------------------------------------------------------------
+-dontwarn okhttp3.internal.platform.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**
+
+# --- SIGNAL app models ------------------------------------------------------
+# Enum types used in Room TypeConverters — must preserve valueOf().
+-keepclassmembers enum dev.aiaerial.signal.data.model.** {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# Keep Compose navigation @Serializable route objects
+-keep @kotlinx.serialization.Serializable class dev.aiaerial.signal.ui.navigation.** { *; }

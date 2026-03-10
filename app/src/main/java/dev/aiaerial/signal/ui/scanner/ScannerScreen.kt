@@ -16,6 +16,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import android.content.pm.PackageManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,9 +25,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -55,8 +58,19 @@ fun ScannerScreen(
         Manifest.permission.CHANGE_WIFI_STATE,
     )
 
+    val context = LocalContext.current
+
+    // Only prompt for permissions if not already granted (avoids dialog flash on every app start)
     LaunchedEffect(Unit) {
-        permissionLauncher.launch(permissions)
+        val allGranted = permissions.all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
+        if (allGranted) {
+            permissionsGranted = true
+            viewModel.triggerScan()
+        } else {
+            permissionLauncher.launch(permissions)
+        }
     }
 
     if (!permissionsGranted && scanResults.isEmpty()) {

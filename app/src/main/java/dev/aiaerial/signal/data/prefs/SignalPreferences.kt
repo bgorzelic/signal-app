@@ -24,4 +24,9 @@ class SignalPreferences @Inject constructor(
     var setupComplete: Boolean
         get() = prefs.getBoolean("setup_complete", false)
         set(value) = prefs.edit().putBoolean("setup_complete", value).apply()
+
+    /** Data retention period in days. Default 30. Set to 0 to disable auto-cleanup. */
+    var retentionDays: Int
+        get() = prefs.getInt("retention_days", 30)
+        set(value) = prefs.edit().putInt("retention_days", value).apply()
 }

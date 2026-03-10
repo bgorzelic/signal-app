@@ -23,8 +23,8 @@ android {
 
     buildTypes {
         release {
-            // TODO: Enable R8 before release — add Hilt/Room keep rules
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -40,6 +40,15 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
+    // Export Room schemas for migration testing and version tracking
+    ksp {
+        arg("room.schemaLocation", "$projectDir/schemas")
     }
 }
 

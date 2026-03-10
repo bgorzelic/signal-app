@@ -9,6 +9,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import dev.aiaerial.signal.data.model.NetworkEvent
 import dev.aiaerial.signal.data.openclaw.OpenClawClient
+import kotlin.coroutines.cancellation.CancellationException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,6 +25,8 @@ fun TriageBottomSheet(
         isLoading = true
         analysis = try {
             openClawClient.triageEvent(event)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             "Error: ${e.message}\n\nIs OpenClaw running on localhost:18789?"
         }

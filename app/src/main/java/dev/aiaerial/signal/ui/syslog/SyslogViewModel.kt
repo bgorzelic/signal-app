@@ -15,6 +15,8 @@ import dev.aiaerial.signal.service.SyslogService
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.ArrayDeque
 import javax.inject.Inject
 
@@ -42,8 +44,10 @@ class SyslogViewModel @Inject constructor(
     private var service: SyslogService? = null
     private var isBound = false
 
-    // ArrayDeque: O(1) addFirst, newest messages at the front
+    // ArrayDeque: O(1) addFirst, newest messages at the front.
+    // All access must go through messagesMutex to prevent concurrent modification.
     private val allMessages = ArrayDeque<SyslogMessage>(MAX_MESSAGES + 1)
+    private val messagesMutex = Mutex()
 
     init {
         // Debounce filter text to avoid O(n) scans on every keystroke
@@ -58,8 +62,10 @@ class SyslogViewModel @Inject constructor(
             _isRunning.value = true
             viewModelScope.launch {
                 service?.messages?.collect { msg ->
-                    allMessages.addFirst(msg)
-                    if (allMessages.size > MAX_MESSAGES) allMessages.removeLast()
+                    messagesMutex.withLock {
+                        allMessages.addFirst(msg)
+                        if (allMessages.size > MAX_MESSAGES) allMessages.removeLast()
+                    }
                     applyFilter()
                 }
             }
@@ -101,17 +107,22 @@ class SyslogViewModel @Inject constructor(
         _filterText.value = text
     }
 
-    private fun applyFilter() {
+    private suspend fun applyFilter() {
         val filter = _filterText.value
+        val snapshot = messagesMutex.withLock { allMessages.toList() }
         _messages.value = if (filter.isBlank()) {
-            allMessages.toList()
+            snapshot
         } else {
-            allMessages.filter { it.raw.contains(filter, ignoreCase = true) }
+            snapshot.filter { it.raw.contains(filter, ignoreCase = true) }
         }
     }
 
     fun clearMessages() {
-        allMessages.clear()
-        _messages.value = emptyList()
+        viewModelScope.launch {
+            messagesMutex.withLock {
+                allMessages.clear()
+            }
+            _messages.value = emptyList()
+        }
     }
 }

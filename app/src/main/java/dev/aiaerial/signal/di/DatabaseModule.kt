@@ -22,7 +22,11 @@ object DatabaseModule {
             context,
             SignalDatabase::class.java,
             "signal_database",
-        ).fallbackToDestructiveMigration()
+        )
+            .addMigrations(*SignalDatabase.ALL_MIGRATIONS)
+            // Destructive fallback only during development (v0.x).
+            // Remove before v1.0 release — all migrations must be explicit by then.
+            .fallbackToDestructiveMigration()
             .build()
     }
 

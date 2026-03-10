@@ -36,4 +36,21 @@ interface NetworkEventDao {
 
     @Query("SELECT COUNT(*) FROM network_events WHERE sessionId = :sessionId")
     fun getEventCount(sessionId: String): Flow<Int>
+
+    /** Get all distinct sessions with their oldest timestamp, ordered newest first. */
+    @Query("""
+        SELECT sessionId, MIN(timestamp) AS timestamp, COUNT(*) AS eventCount
+        FROM network_events
+        GROUP BY sessionId
+        ORDER BY MIN(timestamp) DESC
+    """)
+    suspend fun getSessionSummaries(): List<SessionSummary>
+
+    /** Delete all events older than the given timestamp. */
+    @Query("DELETE FROM network_events WHERE timestamp < :cutoffTimestamp")
+    suspend fun deleteOlderThan(cutoffTimestamp: Long): Int
+
+    /** Get total row count across all sessions. */
+    @Query("SELECT COUNT(*) FROM network_events")
+    suspend fun getTotalEventCount(): Int
 }

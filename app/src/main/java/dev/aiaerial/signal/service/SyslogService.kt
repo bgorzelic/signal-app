@@ -94,7 +94,10 @@ class SyslogService : Service() {
 
     override fun onDestroy() {
         receiver?.stop()
-        kotlinx.coroutines.runBlocking { eventPipeline.flush() }
+        // Flush pending events on IO thread to avoid blocking main thread (ANR risk).
+        // runBlocking(Dispatchers.IO) ensures the flush completes before the scope is cancelled,
+        // while keeping the main thread's looper free.
+        runBlocking(Dispatchers.IO) { eventPipeline.flush() }
         scope.cancel()
         super.onDestroy()
     }
