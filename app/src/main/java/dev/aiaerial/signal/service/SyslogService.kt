@@ -50,6 +50,8 @@ class SyslogService : Service() {
                 receiver.messages.collect { msg ->
                     try {
                         eventPipeline.processSyslogMessage(msg)
+                    } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         android.util.Log.e("SyslogService", "Failed to process message", e)
                     }

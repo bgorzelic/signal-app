@@ -22,7 +22,8 @@ object DatabaseModule {
             context,
             SignalDatabase::class.java,
             "signal_database",
-        ).build()
+        ).fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

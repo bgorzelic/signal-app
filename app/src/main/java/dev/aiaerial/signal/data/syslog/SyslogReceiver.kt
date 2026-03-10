@@ -15,7 +15,7 @@ class SyslogReceiver(
     private var job: Job? = null
 
     suspend fun start(scope: CoroutineScope) {
-        if (job != null) return // prevent double-start
+        if (job?.isActive == true) return // prevent double-start
         job = scope.launch(Dispatchers.IO) {
             val selectorManager = SelectorManager(Dispatchers.IO)
             val socket = try {
