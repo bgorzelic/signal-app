@@ -329,7 +329,7 @@ SIGNAL's syslog listener must stay alive continuously while a wireless engineer 
 
 ## Known Limitations
 
-1. **Cisco-only parsing.** Only `CiscoWlcParser` exists. Aruba, Meraki, Ruckus, and Juniper syslog formats are not yet handled. The `VendorParser` interface and `VendorDetector` router are ready for new parsers.
+1. **Two-vendor parsing only.** `CiscoWlcParser` and `ArubaParser` exist. Meraki, Ruckus, and Juniper syslog formats are not yet handled. The `VendorParser` interface and `VendorDetector` router are ready for new parsers.
 
 2. **WiFi scanning uses deprecated APIs.** `WifiManager.startScan()` and `WifiManager.connectionInfo` are deprecated. They still work on Android 16 but may be removed. Replacements: `registerScanResultsCallback()` and `ConnectivityManager.NetworkCallback`.
 
@@ -361,16 +361,17 @@ SIGNAL's syslog listener must stay alive continuously while a wireless engineer 
 
 ## Testing
 
-### Unit Tests (9 test files, 49 tests)
+### Unit Tests (10 test files, 62 tests)
 | Test File | Coverage |
 |---|---|
+| `ArubaParserTest` | 12 tests: association, roaming, deauth, disassoc, auth, MAC formats |
 | `CiscoWlcParserTest` | 11 tests: event type detection, field extraction, edge cases |
 | `WifiScanResultTest` | 10 tests: channel derivation (2.4/5/6 GHz), band strings |
 | `EventPipelineTest` | 8 tests: session management, batching, log block parsing |
 | `SyslogMessageTest` | 6 tests: RFC 3164 parsing, severity levels, edge cases |
 | `SessionExporterTest` | 4 tests: CSV/JSON export, escaping, empty lists |
 | `DataRetentionManagerTest` | 4 tests: cleanup logic, retention period, disabled mode |
-| `VendorDetectorTest` | 2 tests: Cisco routing, unknown vendor rejection |
+| `VendorDetectorTest` | 3 tests: Cisco routing, Aruba routing, unknown vendor rejection |
 | `NetworkEventTest` | 2 tests: full construction, nullable fields |
 | `OpenClawClientTest` | 2 tests: triage prompt content |
 
@@ -481,10 +482,10 @@ See `docs/audit-report.md` for the full technical audit. Key findings:
 
 ## Future Roadmap
 
-### Near-term (v0.2) — DONE
-1. ~~Share/Export button for session data (CSV/JSON via Android Share sheet)~~ DONE
-2. ~~Session picker for historical session browsing~~ DONE
-3. Add Aruba parser (ArubaOS-CX syslog format)
+### Near-term (v0.2) — COMPLETE
+1. ~~Share/Export button for session data (CSV/JSON via Android Share sheet)~~
+2. ~~Session picker for historical session browsing~~
+3. ~~Aruba parser (AOS-8 Mobility Controller syslog)~~
 
 ### Medium-term (v0.3)
 4. Meraki parser (Meraki MR syslog format)
