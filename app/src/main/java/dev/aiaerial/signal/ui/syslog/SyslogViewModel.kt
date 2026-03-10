@@ -12,10 +12,15 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.aiaerial.signal.data.EventPipeline
 import dev.aiaerial.signal.data.syslog.SyslogMessage
 import dev.aiaerial.signal.service.SyslogService
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.ArrayDeque
 import javax.inject.Inject
 
+private const val MAX_MESSAGES = 5000
+
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class SyslogViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -36,7 +41,16 @@ class SyslogViewModel @Inject constructor(
 
     private var service: SyslogService? = null
     private var isBound = false
-    private val allMessages = java.util.Collections.synchronizedList(mutableListOf<SyslogMessage>())
+
+    // ArrayDeque: O(1) addFirst, newest messages at the front
+    private val allMessages = ArrayDeque<SyslogMessage>(MAX_MESSAGES + 1)
+
+    init {
+        // Debounce filter text to avoid O(n) scans on every keystroke
+        viewModelScope.launch {
+            _filterText.debounce(300).collect { applyFilter() }
+        }
+    }
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
@@ -44,8 +58,8 @@ class SyslogViewModel @Inject constructor(
             _isRunning.value = true
             viewModelScope.launch {
                 service?.messages?.collect { msg ->
-                    allMessages.add(0, msg) // newest first
-                    if (allMessages.size > 5000) allMessages.removeLast()
+                    allMessages.addFirst(msg)
+                    if (allMessages.size > MAX_MESSAGES) allMessages.removeLast()
                     applyFilter()
                 }
             }
@@ -85,7 +99,6 @@ class SyslogViewModel @Inject constructor(
 
     fun setFilter(text: String) {
         _filterText.value = text
-        applyFilter()
     }
 
     private fun applyFilter() {

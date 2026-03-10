@@ -52,7 +52,7 @@ class SyslogService : Service() {
             scope.launch {
                 receiver!!.messages.collect { msg ->
                     try {
-                        eventPipeline.processSyslogMessage(msg)
+                        eventPipeline.processSyslogMessage(msg, scope)
                     } catch (e: kotlin.coroutines.cancellation.CancellationException) {
                         throw e
                     } catch (e: Exception) {
@@ -94,6 +94,7 @@ class SyslogService : Service() {
 
     override fun onDestroy() {
         receiver?.stop()
+        kotlinx.coroutines.runBlocking { eventPipeline.flush() }
         scope.cancel()
         super.onDestroy()
     }

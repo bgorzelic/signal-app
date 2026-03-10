@@ -26,6 +26,7 @@ class ScannerViewModel @Inject constructor(
     private val _connectionInfo = MutableStateFlow<WifiConnectionInfo?>(null)
     val connectionInfo: StateFlow<WifiConnectionInfo?> = _connectionInfo.asStateFlow()
 
+    private val rssiRingBuffer = ArrayDeque<Pair<Long, Int>>(61)
     private val _rssiHistory = MutableStateFlow<List<Pair<Long, Int>>>(emptyList())
     val rssiHistory: StateFlow<List<Pair<Long, Int>>> = _rssiHistory.asStateFlow()
 
@@ -52,14 +53,9 @@ class ScannerViewModel @Inject constructor(
                 val info = wifiScanner.connectionInfo()
                 _connectionInfo.value = info
                 if (info != null) {
-                    val history = _rssiHistory.value.toMutableList()
-                    history.add(System.currentTimeMillis() to info.rssi)
-                    // Keep last 60 data points
-                    if (history.size > 60) {
-                        _rssiHistory.value = history.takeLast(60)
-                    } else {
-                        _rssiHistory.value = history
-                    }
+                    rssiRingBuffer.addLast(System.currentTimeMillis() to info.rssi)
+                    if (rssiRingBuffer.size > 60) rssiRingBuffer.removeFirst()
+                    _rssiHistory.value = rssiRingBuffer.toList()
                 }
                 delay(2_000L)
             }
