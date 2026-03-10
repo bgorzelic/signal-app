@@ -329,7 +329,7 @@ SIGNAL's syslog listener must stay alive continuously while a wireless engineer 
 
 ## Known Limitations
 
-1. **Two-vendor parsing only.** `CiscoWlcParser` and `ArubaParser` exist. Meraki, Ruckus, and Juniper syslog formats are not yet handled. The `VendorParser` interface and `VendorDetector` router are ready for new parsers.
+1. **Three-vendor parsing.** `CiscoWlcParser`, `ArubaParser`, and `MerakiParser` exist. Ruckus and Juniper Mist syslog formats are not yet handled. The `VendorParser` interface and `VendorDetector` router are ready for new parsers.
 
 2. **WiFi scanning uses deprecated APIs.** `WifiManager.startScan()` and `WifiManager.connectionInfo` are deprecated. They still work on Android 16 but may be removed. Replacements: `registerScanResultsCallback()` and `ConnectivityManager.NetworkCallback`.
 
@@ -361,17 +361,19 @@ SIGNAL's syslog listener must stay alive continuously while a wireless engineer 
 
 ## Testing
 
-### Unit Tests (10 test files, 62 tests)
+### Unit Tests (12 test files, 79 tests)
 | Test File | Coverage |
 |---|---|
 | `ArubaParserTest` | 12 tests: association, roaming, deauth, disassoc, auth, MAC formats |
 | `CiscoWlcParserTest` | 11 tests: event type detection, field extraction, edge cases |
+| `MerakiParserTest` | 11 tests: association, reassociation, auth, deauth, splash, AP name |
 | `WifiScanResultTest` | 10 tests: channel derivation (2.4/5/6 GHz), band strings |
 | `EventPipelineTest` | 8 tests: session management, batching, log block parsing |
 | `SyslogMessageTest` | 6 tests: RFC 3164 parsing, severity levels, edge cases |
+| `EmaSmootherTest` | 5 tests: variance reduction, convergence, alpha sensitivity |
 | `SessionExporterTest` | 4 tests: CSV/JSON export, escaping, empty lists |
 | `DataRetentionManagerTest` | 4 tests: cleanup logic, retention period, disabled mode |
-| `VendorDetectorTest` | 3 tests: Cisco routing, Aruba routing, unknown vendor rejection |
+| `VendorDetectorTest` | 4 tests: Cisco, Aruba, Meraki routing, unknown vendor |
 | `NetworkEventTest` | 2 tests: full construction, nullable fields |
 | `OpenClawClientTest` | 2 tests: triage prompt content |
 
@@ -487,9 +489,9 @@ See `docs/audit-report.md` for the full technical audit. Key findings:
 2. ~~Session picker for historical session browsing~~
 3. ~~Aruba parser (AOS-8 Mobility Controller syslog)~~
 
-### Medium-term (v0.3)
-4. Meraki parser (Meraki MR syslog format)
-5. RSSI trend smoothing (EMA or Kalman filter)
+### Medium-term (v0.3) — IN PROGRESS
+4. ~~Meraki parser (Meraki MR syslog format)~~
+5. ~~RSSI trend smoothing (EMA, alpha=0.3)~~
 6. Channel utilization estimation (from scan results)
 7. AP association mapping (which clients are on which APs)
 8. Migrate to non-deprecated WiFi APIs
@@ -512,7 +514,8 @@ Full engineering audit and documentation improvement pass. Analyzed all 42 sourc
 
 ### Current Session
 1. Targeted remediation pass for 6 open audit items (Room migration, R8, data retention, tests). See `docs/audits/2026-03-signal-remediation.md`.
-2. Implemented v0.2 features: session picker (browse historical sessions) and CSV/JSON export via Android Share sheet on Timeline screen.
+2. v0.2 complete: session picker, CSV/JSON export via Share sheet.
+3. v0.3 in progress: Aruba parser, Meraki parser, EMA-smoothed RSSI chart.
 
 ## Blockers
 
