@@ -252,5 +252,5 @@ The app uses only 5 icons (Wifi, Message, Timeline, Settings, ArrowBack). The ex
 | Medium | M2: Fix version to 0.1.0 | 2 min | FIXED |
 | Medium | M1: Delete scaffold test files | 2 min | FIXED |
 | Low | I5: Migrate deprecated WiFi APIs | 2 hours | Open |
-| Low | I7: SharedFlow burst handling | 30 min | Open |
+| Low | I7: SharedFlow burst handling | 30 min | FIXED |
 | Low | M5: Remove extended icons or enable R8 | 30 min | Open |
