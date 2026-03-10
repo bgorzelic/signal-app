@@ -1,0 +1,8 @@
+<134>Mar 09 10:00:01 wlc-9800 *apfMsConnTask_6: %CLIENT_ORCH_LOG-6-CLIENT_ADDED_TO_RUN_STATE: R0/0: wncd: Username entry (aa:bb:cc:dd:ee:ff) joined with ssid (CorpWiFi) for device with AP name (AP-Floor1-North) AP mac (00:11:22:33:44:01) channel (36) rssi (-58)
+<134>Mar 09 10:00:05 wlc-9800 *apfMsConnTask_6: %CLIENT_ORCH_LOG-6-CLIENT_ADDED_TO_RUN_STATE: R0/0: wncd: Username entry (aa:bb:cc:dd:ee:ff) joined with ssid (CorpWiFi) for device with AP name (AP-Floor1-East) AP mac (00:11:22:33:44:02) channel (149) rssi (-62)
+<134>Mar 09 10:00:12 wlc-9800 *apfMsConnTask_6: %CLIENT_ORCH_LOG-6-CLIENT_ADDED_TO_RUN_STATE: R0/0: wncd: Username entry (aa:bb:cc:dd:ee:ff) joined with ssid (CorpWiFi) for device with AP name (AP-Floor1-South) AP mac (00:11:22:33:44:03) channel (6) rssi (-70)
+<27>Mar 09 10:00:30 wlc-9800 *apfMsConnTask_3: %DOT11-4-DEAUTH: Station aa:bb:cc:dd:ee:ff Deauthenticated reason 8
+<134>Mar 09 10:00:35 wlc-9800 *apfMsConnTask_0: %DOT11-6-ASSOC: Station aa:bb:cc:dd:ee:ff Associated MAP AP-Floor1-North slot 1
+<134>Mar 09 10:01:00 wlc-9800 *apfMsConnTask_6: %CLIENT_ORCH_LOG-6-CLIENT_ADDED_TO_RUN_STATE: R0/0: wncd: Username entry (11:22:33:44:55:66) joined with ssid (GuestWiFi) for device with AP name (AP-Lobby) AP mac (00:11:22:33:44:10) channel (1) rssi (-45)
+<27>Mar 09 10:01:15 wlc-9800 *emWeb: %DOT1X-3-AUTH_FAIL: Authentication failed for client 11:22:33:44:55:66 reason TIMEOUT
+<134>Mar 09 10:01:30 wlc-9800 *apfMsConnTask_2: %DOT11-6-DISASSOC: Station 11:22:33:44:55:66 Disassociated MAP AP-Lobby reason 1

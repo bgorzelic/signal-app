@@ -1,0 +1,9 @@
+<134>Mar 09 12:00:00 switch-core %SYS-5-CONFIG_I: Configured from console by admin on vty0
+<134>Mar 09 12:00:01 switch-core %LINK-3-UPDOWN: Interface GigabitEthernet1/0/24, changed state to up
+<134>Mar 09 12:00:02 wlc-9800 *apfMsConnTask_6: %CLIENT_ORCH_LOG-6-CLIENT_ADDED_TO_RUN_STATE: R0/0: wncd: Username entry (aa:bb:cc:dd:ee:ff) joined with ssid (CorpWiFi) for device with AP name (AP-Floor3-East) AP mac (00:11:22:33:44:55) channel (36) rssi (-62)
+<134>Mar 09 12:00:03 firewall %ASA-6-302013: Built outbound TCP connection 12345
+<27>Mar 09 12:00:04 wlc-9800 *apfMsConnTask_3: %DOT11-4-DEAUTH: Station aa:bb:cc:dd:ee:ff Deauthenticated reason 8
+<134>Mar 09 12:00:05 switch-access %CDP-4-NATIVE_VLAN_MISMATCH: Native VLAN mismatch
+Mar 09 12:00:06 syslog-forwarder this is a non-RFC3164 message without priority
+<134>Mar 09 12:00:07 wlc-9800 *apfMsConnTask_0: %DOT11-6-ASSOC: Station bb:cc:dd:ee:ff:00 Associated MAP AP-Floor3-West slot 0
+<134>Mar 09 12:00:08 dhcp-server DHCPACK on 10.0.1.100 to aa:bb:cc:dd:ee:ff via Vlan10

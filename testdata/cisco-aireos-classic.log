@@ -1,0 +1,6 @@
+<134>Mar 09 08:30:00 wlc-5520 *apfMsConnTask_0: %DOT11-6-ASSOC: Station aa:bb:cc:dd:ee:ff Associated MAP AP-BuildingA-Floor2 slot 1
+<134>Mar 09 08:30:05 wlc-5520 *apfMsConnTask_0: %DOT11-6-ASSOC: Station aa:bb:cc:dd:ee:ff Associated MAP AP-BuildingA-Floor2 slot 0
+<27>Mar 09 08:31:00 wlc-5520 *apfMsConnTask_3: %DOT11-4-DEAUTH: Station aa:bb:cc:dd:ee:ff Deauthenticated reason 4
+<134>Mar 09 08:31:15 wlc-5520 *apfMsConnTask_0: %DOT11-6-ASSOC: Station aa:bb:cc:dd:ee:ff Associated MAP AP-BuildingA-Floor3 slot 1
+<134>Mar 09 08:32:00 wlc-5520 *apfMsConnTask_6: apf_ms_connect.c:4567 aa:bb:cc:dd:ee:ff joined with ssid CorpWiFi
+<27>Mar 09 08:33:00 wlc-5520 *apfMsConnTask_3: %DOT11-3-DEAUTH: Station cc:dd:ee:ff:00:11 DEAUTHENTICATION reason 1
