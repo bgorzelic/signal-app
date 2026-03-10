@@ -152,7 +152,8 @@ app/src/main/java/dev/aiaerial/signal/
 │   ├── model/
 │   │   ├── NetworkEvent.kt        # Room @Entity — the core data model for all wireless events
 │   │   ├── EventType.kt           # Enum: ROAM, AUTH, DEAUTH, ASSOC, DISASSOC, RF_CHANGE, etc.
-│   │   └── Vendor.kt              # Enum: CISCO, ARUBA, MERAKI, RUCKUS, JUNIPER, GENERIC, ANDROID
+│   │   ├── Vendor.kt              # Enum: CISCO, ARUBA, MERAKI, RUCKUS, JUNIPER, GENERIC, ANDROID
+│   │   └── ApAssociation.kt       # AP→client grouping from events (fromEvents companion factory)
 │   ├── local/
 │   │   ├── SignalDatabase.kt      # Room database (v1, fallbackToDestructiveMigration for dev)
 │   │   ├── NetworkEventDao.kt     # DAO — Flow-based reactive queries for events
@@ -173,9 +174,10 @@ app/src/main/java/dev/aiaerial/signal/
 │   ├── export/
 │   │   └── SessionExporter.kt     # CSV/JSON export with field escaping (CSV injection prevention)
 │   └── wifi/
-│       ├── WifiScanner.kt         # Wraps WifiManager — scan results as callbackFlow, connection info
+│       ├── WifiScanner.kt         # Wraps WifiManager + ConnectivityManager — modern API on 31+
 │       ├── WifiScanResult.kt      # Data class + computed: channel number, band string, width in MHz
-│       └── WifiConnectionInfo.kt  # Current connection: SSID, BSSID, RSSI, link speed, frequency, IP
+│       ├── WifiConnectionInfo.kt  # Current connection: SSID, BSSID, RSSI, link speed, frequency, IP
+│       └── ChannelUtilization.kt  # Per-channel congestion estimate (LOW/MEDIUM/HIGH heuristic)
 │
 ├── service/
 │   └── SyslogService.kt           # Foreground service — keeps UDP listener alive during field surveys
@@ -183,23 +185,25 @@ app/src/main/java/dev/aiaerial/signal/
 ├── di/                             # Hilt dependency injection modules
 │   ├── DatabaseModule.kt           # Provides: SignalDatabase (singleton), NetworkEventDao
 │   ├── NetworkModule.kt            # Provides: OkHttpClient (5s connect, 30s read timeout)
-│   └── WifiModule.kt              # Provides: WifiManager (from system service)
+│   └── WifiModule.kt              # Provides: WifiManager, ConnectivityManager
 │
 └── ui/                             # Compose UI layer — each feature has Screen + ViewModel
     ├── navigation/
     │   └── SignalNavHost.kt        # Bottom nav (4 tabs) + NavHost with type-safe @Serializable routes
     ├── scanner/
-    │   ├── ScannerScreen.kt        # WiFi scan results list + permission handling
-    │   ├── ScannerViewModel.kt     # Scan polling (2s), RSSI ring buffer (60 samples)
-    │   ├── SignalChart.kt          # Canvas RSSI line chart (-90 to -30 dBm range)
+    │   ├── ScannerScreen.kt        # WiFi scan results list + permission handling + channel utilization
+    │   ├── ScannerViewModel.kt     # Scan polling (2s), RSSI ring buffer (60 samples), EMA smoothing
+    │   ├── SignalChart.kt          # Canvas RSSI line chart (-90 to -30 dBm range, dual raw/smoothed)
+    │   ├── ChannelUtilizationCard.kt # Per-channel bar chart colored by congestion level
     │   └── WifiNetworkCard.kt      # Per-network card — SSID, BSSID, channel, band, width, security
     ├── syslog/
     │   ├── SyslogScreen.kt         # Live syslog feed + filter + service start/stop
     │   └── SyslogViewModel.kt      # Service binding, message buffer (5000), debounced filter
     ├── timeline/
-    │   ├── TimelineScreen.kt       # Client MAC selector dropdown + event list
-    │   ├── TimelineViewModel.kt    # flatMapLatest on selected client for reactive queries
-    │   └── RoamingTimelineCard.kt  # Visual timeline — Canvas dot+line, event card with details
+    │   ├── TimelineScreen.kt       # Tabbed view: Client Journey + AP Map, session picker, export
+    │   ├── TimelineViewModel.kt    # flatMapLatest on selected client/session, AP associations
+    │   ├── RoamingTimelineCard.kt  # Visual timeline — Canvas dot+line, event card with details
+    │   └── ApMapCard.kt            # AP association card — AP name, client list with RSSI/channel
     ├── settings/
     │   ├── SettingsScreen.kt       # OpenClaw config, syslog port, setup guide, about
     │   └── SettingsViewModel.kt    # Health check, URL/port persistence
@@ -331,7 +335,7 @@ SIGNAL's syslog listener must stay alive continuously while a wireless engineer 
 
 1. **Three-vendor parsing.** `CiscoWlcParser`, `ArubaParser`, and `MerakiParser` exist. Ruckus and Juniper Mist syslog formats are not yet handled. The `VendorParser` interface and `VendorDetector` router are ready for new parsers.
 
-2. **WiFi scanning uses deprecated APIs.** `WifiManager.startScan()` and `WifiManager.connectionInfo` are deprecated. They still work on Android 16 but may be removed. Replacements: `registerScanResultsCallback()` and `ConnectivityManager.NetworkCallback`.
+2. **WiFi scanning partially uses deprecated APIs.** `WifiManager.startScan()` remains deprecated with no replacement. `connectionInfo` now uses `ConnectivityManager.transportInfo` on API 31+ (falls back on API 29-30). `ScanResult.SSID` uses `wifiSsid` on API 33+.
 
 3. **Destructive migration fallback still active.** `fallbackToDestructiveMigration()` is retained during v0.x. Must be removed before v1.0 — all schema changes must use explicit migrations by then.
 
@@ -361,14 +365,16 @@ SIGNAL's syslog listener must stay alive continuously while a wireless engineer 
 
 ## Testing
 
-### Unit Tests (12 test files, 79 tests)
+### Unit Tests (14 test files, 97 tests)
 | Test File | Coverage |
 |---|---|
 | `ArubaParserTest` | 12 tests: association, roaming, deauth, disassoc, auth, MAC formats |
 | `CiscoWlcParserTest` | 11 tests: event type detection, field extraction, edge cases |
 | `MerakiParserTest` | 11 tests: association, reassociation, auth, deauth, splash, AP name |
 | `WifiScanResultTest` | 10 tests: channel derivation (2.4/5/6 GHz), band strings |
+| `ApAssociationTest` | 10 tests: grouping, DEAUTH/DISASSOC exclusion, ROAM, sorting |
 | `EventPipelineTest` | 8 tests: session management, batching, log block parsing |
+| `ChannelUtilizationTest` | 8 tests: congestion levels, band sorting, average RSSI |
 | `SyslogMessageTest` | 6 tests: RFC 3164 parsing, severity levels, edge cases |
 | `EmaSmootherTest` | 5 tests: variance reduction, convergence, alpha sensitivity |
 | `SessionExporterTest` | 4 tests: CSV/JSON export, escaping, empty lists |
@@ -477,7 +483,7 @@ See `docs/audit-report.md` for the full technical audit. Key findings:
 ### Open Items
 | Priority | Issue | Effort |
 |---|---|---|
-| Low | Migrate deprecated WiFi APIs | 2 hours |
+| Done | ~~Migrate deprecated WiFi APIs~~ | ~~2 hours~~ |
 | Low | Remove `fallbackToDestructiveMigration()` before v1.0 | 15 min |
 | Low | Add Compose UI tests | 2 hours |
 | Low | Add Room DAO integration tests | 1 hour |
@@ -489,12 +495,12 @@ See `docs/audit-report.md` for the full technical audit. Key findings:
 2. ~~Session picker for historical session browsing~~
 3. ~~Aruba parser (AOS-8 Mobility Controller syslog)~~
 
-### Medium-term (v0.3) — IN PROGRESS
+### Medium-term (v0.3) — COMPLETE
 4. ~~Meraki parser (Meraki MR syslog format)~~
 5. ~~RSSI trend smoothing (EMA, alpha=0.3)~~
-6. Channel utilization estimation (from scan results)
-7. AP association mapping (which clients are on which APs)
-8. Migrate to non-deprecated WiFi APIs
+6. ~~Channel utilization estimation (from scan results)~~
+7. ~~AP association mapping (which clients are on which APs)~~
+8. ~~Migrate to non-deprecated WiFi APIs~~
 
 ### Long-term (v1.0)
 12. Ruckus parser
@@ -510,12 +516,13 @@ See `docs/audit-report.md` for the full technical audit. Key findings:
 **Date:** 2026-03-10
 
 ### Previous Work
-Full engineering audit and documentation improvement pass. Analyzed all 42 source files and 7 test files. Rewrote HANDOFF.md with comprehensive architecture documentation.
+- Engineering audit and remediation pass (6 issues resolved)
+- v0.2 complete: session picker, CSV/JSON export, Aruba + Meraki parsers, EMA smoothing
 
 ### Current Session
-1. Targeted remediation pass for 6 open audit items (Room migration, R8, data retention, tests). See `docs/audits/2026-03-signal-remediation.md`.
-2. v0.2 complete: session picker, CSV/JSON export via Share sheet.
-3. v0.3 in progress: Aruba parser, Meraki parser, EMA-smoothed RSSI chart.
+1. v0.3 complete: channel utilization estimation, AP association mapping, deprecated WiFi API migration.
+2. 18 new tests: ChannelUtilizationTest (8), ApAssociationTest (10).
+3. Total: 14 test files, 97 unit tests.
 
 ## Blockers
 
