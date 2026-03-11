@@ -24,26 +24,30 @@ data class ApAssociation(
          * is DEAUTH or DISASSOC (they're no longer associated).
          */
         fun fromEvents(events: List<NetworkEvent>): List<ApAssociation> {
-            // For each client, find their most recent event
+            // For each client, find their most recent event.
+            // mapNotNull eliminates nulls safely — no !! needed.
             val latestByClient = events
-                .filter { it.clientMac != null }
-                .groupBy { it.clientMac!! }
-                .mapValues { (_, clientEvents) -> clientEvents.maxByOrNull { it.timestamp }!! }
+                .mapNotNull { event -> event.clientMac?.let { mac -> mac to event } }
+                .groupBy({ it.first }, { it.second })
+                .mapValues { (_, clientEvents) -> clientEvents.maxBy { it.timestamp } }
 
             // Only keep clients that are currently associated (last event is ASSOC or ROAM)
             val associatedClients = latestByClient.values
                 .filter { it.eventType in setOf(EventType.ASSOC, EventType.ROAM, EventType.AUTH) }
-                .filter { it.apName != null }
 
-            // Group by AP
+            // Group by AP, skipping events with null apName
             return associatedClients
-                .groupBy { it.apName!! }
-                .map { (ap, events) ->
+                .mapNotNull { event -> event.apName?.let { ap -> ap to event } }
+                .groupBy({ it.first }, { it.second })
+                .map { (ap, apEvents) ->
                     ApAssociation(
                         apName = ap,
-                        clients = events.map { e ->
+                        clients = apEvents.map { e ->
                             ClientState(
-                                clientMac = e.clientMac!!,
+                                // clientMac is guaranteed non-null here: we filtered
+                                // on clientMac in latestByClient above, and apEvents
+                                // are a subset of those values.
+                                clientMac = e.clientMac ?: error("BUG: null clientMac after filtering"),
                                 rssi = e.rssi,
                                 channel = e.channel,
                                 lastEventType = e.eventType,

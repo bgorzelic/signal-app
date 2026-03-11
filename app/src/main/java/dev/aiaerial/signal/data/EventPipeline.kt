@@ -30,6 +30,30 @@ class EventPipeline @Inject constructor(
     private val pendingEvents = mutableListOf<NetworkEvent>()
     private var flushJob: Job? = null
 
+    // External scope used to launch the delayed flush timer. Set once by the
+    // service/caller that owns this pipeline's lifecycle. Avoids passing a scope
+    // into every processSyslogMessage() call.
+    @Volatile
+    private var flushScope: CoroutineScope? = null
+
+    /**
+     * Bind an external [CoroutineScope] for launching delayed flush timers.
+     * Call this once when the pipeline's owner (e.g. SyslogService) starts up.
+     * When the owner stops, call [unbindScope] or simply cancel the scope.
+     */
+    fun bindScope(scope: CoroutineScope) {
+        flushScope = scope
+    }
+
+    /**
+     * Unbind the flush scope. Pending flush jobs are cancelled.
+     */
+    fun unbindScope() {
+        flushJob?.cancel()
+        flushJob = null
+        flushScope = null
+    }
+
     fun getSessionId(): String = currentSessionId
 
     suspend fun newSession(): String {
@@ -38,16 +62,29 @@ class EventPipeline @Inject constructor(
         return currentSessionId
     }
 
-    suspend fun processSyslogMessage(msg: SyslogMessage, scope: CoroutineScope? = null): NetworkEvent? {
+    /**
+     * Process a syslog message: parse, batch, and flush when thresholds are met.
+     *
+     * The optional [scope] parameter is supported for backward compatibility but
+     * callers should prefer calling [bindScope] once at startup. If [scope] is
+     * provided it takes precedence over the bound scope for this call only.
+     */
+    suspend fun processSyslogMessage(
+        msg: SyslogMessage,
+        scope: CoroutineScope? = null,
+    ): NetworkEvent? {
         val event = vendorDetector.parse(msg.raw, currentSessionId) ?: return null
         batchMutex.withLock {
             pendingEvents.add(event)
             if (pendingEvents.size >= BATCH_SIZE) {
                 flushLocked()
-            } else if (flushJob == null && scope != null) {
-                flushJob = scope.launch {
-                    delay(FLUSH_INTERVAL_MS)
-                    flush()
+            } else if (flushJob == null) {
+                val timerScope = scope ?: flushScope
+                if (timerScope != null) {
+                    flushJob = timerScope.launch {
+                        delay(FLUSH_INTERVAL_MS)
+                        flush()
+                    }
                 }
             }
         }

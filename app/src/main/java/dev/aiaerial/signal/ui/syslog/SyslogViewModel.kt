@@ -13,6 +13,7 @@ import dev.aiaerial.signal.data.EventPipeline
 import dev.aiaerial.signal.data.syslog.SyslogMessage
 import dev.aiaerial.signal.service.SyslogService
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -41,8 +42,18 @@ class SyslogViewModel @Inject constructor(
     val parsedEventCount: StateFlow<Int> = eventPipeline.eventCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    // Service binding state — accessed from ServiceConnection callbacks (main thread)
+    // and ViewModel public methods (main thread). Both run on the main thread so
+    // @Volatile is sufficient; no mutex needed for these two fields.
+    @Volatile
     private var service: SyslogService? = null
+
+    @Volatile
     private var isBound = false
+
+    // Job for the message collection coroutine — cancelled on unbind to prevent
+    // collecting from a stale service reference after onServiceDisconnected.
+    private var collectionJob: Job? = null
 
     // ArrayDeque: O(1) addFirst, newest messages at the front.
     // All access must go through messagesMutex to prevent concurrent modification.
@@ -58,16 +69,17 @@ class SyslogViewModel @Inject constructor(
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-            service = (binder as SyslogService.LocalBinder).service
+            val svc = (binder as SyslogService.LocalBinder).service
+            service = svc
             _isRunning.value = true
-            viewModelScope.launch {
-                service?.messages?.collect { msg ->
+            collectionJob?.cancel()
+            collectionJob = viewModelScope.launch {
+                svc.messages?.collect { msg ->
                     // Capture the snapshot inside the lock so that the write and
                     // the read that feeds applyFilter are a single atomic operation.
                     // This prevents a concurrent applyFilter() call (e.g. from the
                     // filter-text debounce) from overwriting a fresher snapshot with
-                    // a stale one — the TOCTOU window that existed when the lock was
-                    // released before applyFilter() was called.
+                    // a stale one.
                     val snapshot = messagesMutex.withLock {
                         allMessages.addFirst(msg)
                         if (allMessages.size > MAX_MESSAGES) allMessages.removeLast()
@@ -79,6 +91,8 @@ class SyslogViewModel @Inject constructor(
         }
 
         override fun onServiceDisconnected(name: ComponentName) {
+            collectionJob?.cancel()
+            collectionJob = null
             service = null
             isBound = false
             _isRunning.value = false
@@ -86,6 +100,7 @@ class SyslogViewModel @Inject constructor(
     }
 
     fun startListening() {
+        if (isBound) return // already bound — avoid double-bind
         val intent = Intent(context, SyslogService::class.java)
         context.startForegroundService(intent)
         context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
@@ -93,21 +108,24 @@ class SyslogViewModel @Inject constructor(
     }
 
     fun stopListening() {
-        if (isBound) {
-            context.unbindService(connection)
-            isBound = false
-        }
+        unbindIfNeeded()
         context.stopService(Intent(context, SyslogService::class.java))
         service = null
         _isRunning.value = false
     }
 
     override fun onCleared() {
+        unbindIfNeeded()
+        super.onCleared()
+    }
+
+    private fun unbindIfNeeded() {
         if (isBound) {
+            collectionJob?.cancel()
+            collectionJob = null
             context.unbindService(connection)
             isBound = false
         }
-        super.onCleared()
     }
 
     fun setFilter(text: String) {
