@@ -22,7 +22,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +47,8 @@ fun ScannerScreen(
     val channelUtilization by viewModel.channelUtilization.collectAsStateWithLifecycle()
 
     var permissionsGranted by remember { mutableStateOf(false) }
+    var isScanning by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -153,10 +158,20 @@ fun ScannerScreen(
         item {
             Spacer(modifier = Modifier.height(4.dp))
             Button(
-                onClick = { viewModel.triggerScan() },
+                onClick = {
+                    if (!isScanning) {
+                        isScanning = true
+                        viewModel.triggerScan()
+                        coroutineScope.launch {
+                            delay(2_000L)
+                            isScanning = false
+                        }
+                    }
+                },
+                enabled = !isScanning,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Scan WiFi Networks")
+                Text(if (isScanning) "Scanning..." else "Scan WiFi Networks")
             }
         }
 

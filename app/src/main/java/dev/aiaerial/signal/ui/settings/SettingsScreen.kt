@@ -142,7 +142,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
         // App info
         Text("About", style = MaterialTheme.typography.titleMedium)
-        Text("SIGNAL v0.1.0", style = MaterialTheme.typography.bodySmall)
+        Text("SIGNAL v0.3.0", style = MaterialTheme.typography.bodySmall)
         Text("AI Aerial Solutions", style = MaterialTheme.typography.bodySmall)
     }
 }

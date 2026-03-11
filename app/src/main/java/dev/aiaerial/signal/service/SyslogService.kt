@@ -9,6 +9,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import dagger.hilt.android.AndroidEntryPoint
 import dev.aiaerial.signal.MainActivity
+import dev.aiaerial.signal.R
 import dev.aiaerial.signal.data.EventPipeline
 import dev.aiaerial.signal.data.prefs.SignalPreferences
 import dev.aiaerial.signal.data.syslog.SyslogMessage
@@ -81,7 +82,7 @@ class SyslogService : Service() {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("SIGNAL Syslog Receiver")
             .setContentText("Listening on UDP port $port")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .build()
 
