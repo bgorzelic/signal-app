@@ -23,6 +23,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import dev.aiaerial.signal.data.openclaw.OpenClawClient
 import dev.aiaerial.signal.ui.logimport.LogImportScreen
 import dev.aiaerial.signal.ui.scanner.ScannerScreen
 import dev.aiaerial.signal.ui.settings.SettingsScreen
@@ -52,7 +53,9 @@ val topLevelRoutes = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SignalNavHost() {
+fun SignalNavHost(
+    openClawClient: OpenClawClient,
+) {
     val navController = rememberNavController()
 
     Scaffold(
@@ -94,6 +97,7 @@ fun SignalNavHost() {
             }
             composable<SyslogRoute> {
                 SyslogScreen(
+                    openClawClient = openClawClient,
                     onImportClick = { navController.navigate(ImportRoute) },
                 )
             }

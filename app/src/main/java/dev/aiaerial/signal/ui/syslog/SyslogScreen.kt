@@ -18,16 +18,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.aiaerial.signal.data.model.EventType
+import dev.aiaerial.signal.data.model.NetworkEvent
+import dev.aiaerial.signal.data.model.Vendor
+import dev.aiaerial.signal.data.openclaw.OpenClawClient
 import dev.aiaerial.signal.data.syslog.SyslogMessage
+import dev.aiaerial.signal.ui.triage.TriageBottomSheet
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun SyslogScreen(
     viewModel: SyslogViewModel = hiltViewModel(),
-    onEventTap: (SyslogMessage) -> Unit = {},
+    openClawClient: OpenClawClient,
     onImportClick: () -> Unit = {},
 ) {
+    var selectedMessage by remember { mutableStateOf<SyslogMessage?>(null) }
     val messages by viewModel.messages.collectAsState()
     val isRunning by viewModel.isRunning.collectAsState()
     val filterText by viewModel.filterText.collectAsState()
@@ -100,9 +106,27 @@ fun SyslogScreen(
         // Messages list
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(messages, key = { it.id }) { msg ->
-                SyslogMessageRow(msg = msg, onClick = { onEventTap(msg) })
+                SyslogMessageRow(msg = msg, onClick = { selectedMessage = msg })
             }
         }
+    }
+
+    selectedMessage?.let { msg ->
+        val networkEvent = remember(msg.id) {
+            NetworkEvent(
+                timestamp = msg.receivedAt,
+                eventType = EventType.UNKNOWN,
+                apName = msg.hostname,
+                vendor = Vendor.GENERIC,
+                rawMessage = msg.raw,
+                sessionId = "",
+            )
+        }
+        TriageBottomSheet(
+            event = networkEvent,
+            openClawClient = openClawClient,
+            onDismiss = { selectedMessage = null },
+        )
     }
 }
 
