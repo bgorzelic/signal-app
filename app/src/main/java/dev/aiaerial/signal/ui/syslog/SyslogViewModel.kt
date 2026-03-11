@@ -62,11 +62,18 @@ class SyslogViewModel @Inject constructor(
             _isRunning.value = true
             viewModelScope.launch {
                 service?.messages?.collect { msg ->
-                    messagesMutex.withLock {
+                    // Capture the snapshot inside the lock so that the write and
+                    // the read that feeds applyFilter are a single atomic operation.
+                    // This prevents a concurrent applyFilter() call (e.g. from the
+                    // filter-text debounce) from overwriting a fresher snapshot with
+                    // a stale one — the TOCTOU window that existed when the lock was
+                    // released before applyFilter() was called.
+                    val snapshot = messagesMutex.withLock {
                         allMessages.addFirst(msg)
                         if (allMessages.size > MAX_MESSAGES) allMessages.removeLast()
+                        allMessages.toList()
                     }
-                    applyFilter()
+                    applyFilter(snapshot)
                 }
             }
         }
@@ -107,13 +114,17 @@ class SyslogViewModel @Inject constructor(
         _filterText.value = text
     }
 
-    private suspend fun applyFilter() {
+    // snapshot — when the caller has already captured allMessages under the mutex
+    //   (the message-writer path), pass it here to avoid a second lock acquisition
+    //   and eliminate the TOCTOU window between write and read.
+    // When null (the filter-text debounce path), the snapshot is taken under the mutex here.
+    private suspend fun applyFilter(snapshot: List<SyslogMessage>? = null) {
         val filter = _filterText.value
-        val snapshot = messagesMutex.withLock { allMessages.toList() }
+        val data = snapshot ?: messagesMutex.withLock { allMessages.toList() }
         _messages.value = if (filter.isBlank()) {
-            snapshot
+            data
         } else {
-            snapshot.filter { it.raw.contains(filter, ignoreCase = true) }
+            data.filter { it.raw.contains(filter, ignoreCase = true) }
         }
     }
 
