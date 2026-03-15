@@ -130,7 +130,7 @@ fun ClientDetailSheet(
             LazyColumn(
                 modifier = Modifier.height(300.dp),
             ) {
-                items(clientEvents, key = { it.id }) { event ->
+                items(clientEvents, key = { "${it.id}-${it.timestamp}" }) { event ->
                     val eventColor = when (event.eventType) {
                         EventType.ROAM -> colors.eventRoam
                         EventType.ASSOC -> colors.eventAssoc

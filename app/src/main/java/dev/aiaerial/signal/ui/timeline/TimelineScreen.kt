@@ -296,7 +296,7 @@ fun TimelineScreen(viewModel: TimelineViewModel = hiltViewModel()) {
                     }
 
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(events, key = { it.id }) { event ->
+                        items(events, key = { "${it.id}-${it.timestamp}" }) { event ->
                             RoamingTimelineCard(
                                 event = event,
                                 modifier = Modifier.clickable {
