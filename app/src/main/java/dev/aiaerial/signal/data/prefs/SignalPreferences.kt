@@ -29,4 +29,36 @@ class SignalPreferences @Inject constructor(
     var retentionDays: Int
         get() = prefs.getInt("retention_days", 30)
         set(value) = prefs.edit().putInt("retention_days", value).apply()
+
+    /** Demo mode: use sample data instead of live infrastructure. */
+    var demoMode: Boolean
+        get() = prefs.getBoolean("demo_mode", false)
+        set(value) = prefs.edit().putBoolean("demo_mode", value).apply()
+
+    /** Selected demo scenario index. Maps to DemoScenario.entries. */
+    var demoScenarioIndex: Int
+        get() = prefs.getInt("demo_scenario_index", 0)
+        set(value) = prefs.edit().putInt("demo_scenario_index", value).apply()
+
+    // --- Alert thresholds ---
+
+    /** RSSI threshold below which a weak signal alert fires. */
+    var alertRssiThreshold: Int
+        get() = prefs.getInt("alert_rssi_threshold", -70)
+        set(value) = prefs.edit().putInt("alert_rssi_threshold", value).apply()
+
+    /** Number of roams within alertRoamWindowMinutes that triggers churn alert. */
+    var alertRoamChurnCount: Int
+        get() = prefs.getInt("alert_roam_churn_count", 5)
+        set(value) = prefs.edit().putInt("alert_roam_churn_count", value).apply()
+
+    /** Window in minutes for roam churn detection. */
+    var alertRoamWindowMinutes: Int
+        get() = prefs.getInt("alert_roam_window_minutes", 10)
+        set(value) = prefs.edit().putInt("alert_roam_window_minutes", value).apply()
+
+    /** Number of auth failures that triggers auth failure alert. */
+    var alertAuthFailureCount: Int
+        get() = prefs.getInt("alert_auth_failure_count", 3)
+        set(value) = prefs.edit().putInt("alert_auth_failure_count", value).apply()
 }

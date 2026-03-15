@@ -11,44 +11,57 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.aiaerial.signal.data.wifi.ChannelUtilization
+import dev.aiaerial.signal.ui.theme.ElectricTeal
+import dev.aiaerial.signal.ui.theme.Graphite
+import dev.aiaerial.signal.ui.theme.SignalTheme
+import dev.aiaerial.signal.ui.theme.TextSecondary
+import dev.aiaerial.signal.ui.theme.TextTertiary
 
 @Composable
 fun ChannelUtilizationCard(
     utilization: List<ChannelUtilization>,
     modifier: Modifier = Modifier,
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
+    val colors = SignalTheme.colors
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Graphite),
+    ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
-                text = "Channel Utilization",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                text = "CHANNEL UTILIZATION",
+                style = MaterialTheme.typography.labelSmall,
+                letterSpacing = 2.sp,
+                color = TextTertiary,
             )
 
-            // Group by band
             val byBand = utilization.groupBy { it.band }
             byBand.forEach { (band, channels) ->
                 Text(
                     text = band,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = ElectricTeal,
+                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(top = 8.dp),
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     channels.forEach { ch ->
-                        ChannelBar(ch, modifier = Modifier.weight(1f))
+                        ChannelBar(ch, colors, modifier = Modifier.weight(1f))
                     }
                 }
             }
@@ -59,34 +72,38 @@ fun ChannelUtilizationCard(
 @Composable
 private fun ChannelBar(
     ch: ChannelUtilization,
+    colors: dev.aiaerial.signal.ui.theme.SignalColors,
     modifier: Modifier = Modifier,
 ) {
-    val color = when (ch.congestionLevel) {
-        ChannelUtilization.CongestionLevel.LOW -> Color(0xFF4CAF50)
-        ChannelUtilization.CongestionLevel.MEDIUM -> Color(0xFFFFC107)
-        ChannelUtilization.CongestionLevel.HIGH -> Color(0xFFF44336)
+    val barColor = when (ch.congestionLevel) {
+        ChannelUtilization.CongestionLevel.LOW -> colors.signalExcellent
+        ChannelUtilization.CongestionLevel.MEDIUM -> colors.signalFair
+        ChannelUtilization.CongestionLevel.HIGH -> colors.signalPoor
     }
 
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Bar height proportional to AP count (max 6 for scaling)
         val barHeight = (ch.apCount.coerceAtMost(6) * 6).dp
         Box(
             modifier = Modifier
-                .width(20.dp)
+                .width(18.dp)
                 .height(barHeight)
-                .background(color, RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp)),
+                .background(
+                    barColor.copy(alpha = 0.7f),
+                    RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp),
+                ),
         )
         Text(
             text = "${ch.channel}",
-            style = MaterialTheme.typography.labelSmall,
+            fontSize = 9.sp,
+            color = TextSecondary,
         )
         Text(
             text = "${ch.apCount}",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 9.sp,
+            color = TextTertiary,
         )
     }
 }

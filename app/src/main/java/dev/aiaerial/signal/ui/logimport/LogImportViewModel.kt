@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.aiaerial.signal.data.EventPipeline
+import dev.aiaerial.signal.data.demo.DemoDataProvider
 import dev.aiaerial.signal.data.model.NetworkEvent
 import dev.aiaerial.signal.data.openclaw.OpenClawClient
+import dev.aiaerial.signal.data.prefs.SignalPreferences
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,9 +19,12 @@ import javax.inject.Inject
 class LogImportViewModel @Inject constructor(
     private val pipeline: EventPipeline,
     private val openClawClient: OpenClawClient,
+    private val prefs: SignalPreferences,
 ) : ViewModel() {
 
-    private val _logText = MutableStateFlow("")
+    private val _logText = MutableStateFlow(
+        if (prefs.demoMode) DemoDataProvider.sampleLogBlock() else ""
+    )
     val logText: StateFlow<String> = _logText.asStateFlow()
 
     private val _parsedEvents = MutableStateFlow<List<NetworkEvent>>(emptyList())

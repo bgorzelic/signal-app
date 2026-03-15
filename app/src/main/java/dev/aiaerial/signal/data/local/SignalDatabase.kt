@@ -8,13 +8,14 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import dev.aiaerial.signal.data.model.NetworkEvent
 
 @Database(
-    entities = [NetworkEvent::class],
-    version = 1,
+    entities = [NetworkEvent::class, ScanSnapshot::class],
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
 abstract class SignalDatabase : RoomDatabase() {
     abstract fun networkEventDao(): NetworkEventDao
+    abstract fun scanSnapshotDao(): ScanSnapshotDao
 
     companion object {
         /**
@@ -27,9 +28,25 @@ abstract class SignalDatabase : RoomDatabase() {
          *
          * Then register in DatabaseModule: .addMigrations(MIGRATION_1_2)
          */
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS scan_snapshots (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        timestamp INTEGER NOT NULL,
+                        label TEXT NOT NULL,
+                        ssid TEXT,
+                        bssid TEXT,
+                        rssi INTEGER,
+                        networkCount INTEGER NOT NULL,
+                        dataJson TEXT NOT NULL
+                    )
+                """.trimIndent())
+            }
+        }
+
         val ALL_MIGRATIONS: Array<Migration> = arrayOf(
-            // Add migrations here as schema evolves, e.g.:
-            // MIGRATION_1_2,
+            MIGRATION_1_2,
         )
     }
 }

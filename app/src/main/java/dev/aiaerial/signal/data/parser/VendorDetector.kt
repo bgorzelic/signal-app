@@ -11,7 +11,9 @@ class VendorDetector @Inject constructor() {
         CiscoWlcParser(),
         ArubaParser(),
         MerakiParser(),
-        // Future: RuckusParser(), JuniperMistParser(), etc.
+        RuckusParser(),
+        JuniperMistParser(),
+        UniFiParser(),
     )
 
     fun parse(line: String, sessionId: String): NetworkEvent? {

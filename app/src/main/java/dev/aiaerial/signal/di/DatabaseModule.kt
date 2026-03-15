@@ -8,6 +8,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.aiaerial.signal.data.local.NetworkEventDao
+import dev.aiaerial.signal.data.local.ScanSnapshotDao
 import dev.aiaerial.signal.data.local.SignalDatabase
 import javax.inject.Singleton
 
@@ -33,5 +34,10 @@ object DatabaseModule {
     @Provides
     fun provideNetworkEventDao(database: SignalDatabase): NetworkEventDao {
         return database.networkEventDao()
+    }
+
+    @Provides
+    fun provideScanSnapshotDao(database: SignalDatabase): ScanSnapshotDao {
+        return database.scanSnapshotDao()
     }
 }

@@ -3,10 +3,20 @@ package dev.aiaerial.signal.ui.scanner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.aiaerial.signal.data.alert.Alert
+import dev.aiaerial.signal.data.alert.AlertEngine
+import dev.aiaerial.signal.data.demo.DemoDataProvider
+import dev.aiaerial.signal.data.demo.DemoScenario
+import dev.aiaerial.signal.data.local.ScanSnapshot
+import dev.aiaerial.signal.data.local.ScanSnapshotDao
+import dev.aiaerial.signal.data.prefs.SignalPreferences
 import dev.aiaerial.signal.data.wifi.ChannelUtilization
+import dev.aiaerial.signal.data.wifi.ScanSnapshotSerializer
+import dev.aiaerial.signal.data.wifi.SpeedTest
 import dev.aiaerial.signal.data.wifi.WifiConnectionInfo
 import dev.aiaerial.signal.data.wifi.WifiScanResult
 import dev.aiaerial.signal.data.wifi.WifiScanner
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +29,9 @@ import javax.inject.Inject
 @HiltViewModel
 class ScannerViewModel @Inject constructor(
     private val wifiScanner: WifiScanner,
+    private val prefs: SignalPreferences,
+    private val snapshotDao: ScanSnapshotDao,
+    private val speedTest: SpeedTest,
 ) : ViewModel() {
 
     private val _scanResults = MutableStateFlow<List<WifiScanResult>>(emptyList())
@@ -38,15 +51,150 @@ class ScannerViewModel @Inject constructor(
     private val _smoothedRssiHistory = MutableStateFlow<List<Pair<Long, Int>>>(emptyList())
     val smoothedRssiHistory: StateFlow<List<Pair<Long, Int>>> = _smoothedRssiHistory.asStateFlow()
 
+    private val _alerts = MutableStateFlow<List<Alert>>(emptyList())
+    val alerts: StateFlow<List<Alert>> = _alerts.asStateFlow()
+
+    private val _autoScanEnabled = MutableStateFlow(false)
+    val autoScanEnabled: StateFlow<Boolean> = _autoScanEnabled.asStateFlow()
+
+    private val _autoScanIntervalSec = MutableStateFlow(10)
+    val autoScanIntervalSec: StateFlow<Int> = _autoScanIntervalSec.asStateFlow()
+
+    private val _savedSnapshots = MutableStateFlow<List<ScanSnapshot>>(emptyList())
+    val savedSnapshots: StateFlow<List<ScanSnapshot>> = _savedSnapshots.asStateFlow()
+
+    private val _snapshotSaved = MutableStateFlow(false)
+    val snapshotSaved: StateFlow<Boolean> = _snapshotSaved.asStateFlow()
+
+    private val _speedTestResult = MutableStateFlow<SpeedTest.Result?>(null)
+    val speedTestResult: StateFlow<SpeedTest.Result?> = _speedTestResult.asStateFlow()
+
+    private val _isTestingSpeed = MutableStateFlow(false)
+    val isTestingSpeed: StateFlow<Boolean> = _isTestingSpeed.asStateFlow()
+
     private var emaValue: Double? = null
+    private var autoScanJob: Job? = null
 
     init {
-        collectScanResults()
-        pollConnectionInfo()
+        if (prefs.demoMode) {
+            loadDemoData()
+        } else {
+            collectScanResults()
+            pollConnectionInfo()
+        }
+        loadSnapshots()
     }
 
     fun triggerScan() {
-        wifiScanner.triggerScan()
+        if (prefs.demoMode) {
+            loadDemoData() // refresh demo data
+        } else {
+            wifiScanner.triggerScan()
+        }
+    }
+
+    fun setAutoScan(enabled: Boolean) {
+        _autoScanEnabled.value = enabled
+        if (enabled) {
+            startAutoScan()
+        } else {
+            stopAutoScan()
+        }
+    }
+
+    fun setAutoScanInterval(sec: Int) {
+        _autoScanIntervalSec.value = sec
+        // Restart the auto-scan loop so the new interval takes effect immediately
+        if (_autoScanEnabled.value) {
+            startAutoScan()
+        }
+    }
+
+    private fun startAutoScan() {
+        // Guard: never auto-scan in demo mode
+        if (prefs.demoMode) return
+        autoScanJob?.cancel()
+        autoScanJob = viewModelScope.launch {
+            while (isActive) {
+                triggerScan()
+                delay(_autoScanIntervalSec.value * 1_000L)
+            }
+        }
+    }
+
+    private fun stopAutoScan() {
+        autoScanJob?.cancel()
+        autoScanJob = null
+    }
+
+    fun runSpeedTest() {
+        if (_isTestingSpeed.value) return
+        viewModelScope.launch {
+            _isTestingSpeed.value = true
+            _speedTestResult.value = null
+            _speedTestResult.value = speedTest.runDownloadTest()
+            _isTestingSpeed.value = false
+        }
+    }
+
+    fun saveSnapshot(label: String = "") {
+        viewModelScope.launch {
+            val results = _scanResults.value
+            if (results.isEmpty()) return@launch
+            val info = _connectionInfo.value
+            val autoLabel = label.ifBlank {
+                val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US)
+                    .format(java.util.Date())
+                "${info?.ssid ?: "Scan"} @ $time"
+            }
+            val snapshot = ScanSnapshot(
+                timestamp = System.currentTimeMillis(),
+                label = autoLabel,
+                ssid = info?.ssid,
+                bssid = info?.bssid,
+                rssi = info?.rssi,
+                networkCount = results.size,
+                dataJson = ScanSnapshotSerializer.serialize(results),
+            )
+            snapshotDao.insert(snapshot)
+            _snapshotSaved.value = true
+            delay(2000)
+            _snapshotSaved.value = false
+            loadSnapshots()
+        }
+    }
+
+    fun loadSnapshots() {
+        viewModelScope.launch {
+            snapshotDao.getRecent(20).collect { _savedSnapshots.value = it }
+        }
+    }
+
+    fun deleteSnapshot(id: Long) {
+        viewModelScope.launch {
+            snapshotDao.delete(id)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopAutoScan()
+    }
+
+    private fun loadDemoData() {
+        val scenario = DemoScenario.entries.getOrElse(prefs.demoScenarioIndex) { DemoScenario.HEALTHY_ROAMING }
+        val results = DemoDataProvider.wifiScanResults(scenario)
+        _scanResults.value = results.sortedByDescending { it.rssi }
+        _channelUtilization.value = ChannelUtilization.fromScanResults(results)
+        _connectionInfo.value = DemoDataProvider.connectionInfo(scenario)
+        _rssiHistory.value = DemoDataProvider.rssiHistory(scenario)
+        // Simple smoothing of demo data
+        _smoothedRssiHistory.value = _rssiHistory.value.runningFold(null as Pair<Long, Int>?) { prev, (ts, rssi) ->
+            val smoothed = if (prev == null) rssi else ((0.3 * rssi + 0.7 * prev.second).toInt())
+            ts to smoothed
+        }.filterNotNull()
+        // Congestion alerts
+        _alerts.value = AlertEngine.analyzeCongestion(results)
     }
 
     private fun collectScanResults() {
@@ -54,6 +202,7 @@ class ScannerViewModel @Inject constructor(
             wifiScanner.scanResults().collect { results ->
                 _scanResults.value = results.sortedByDescending { it.rssi }
                 _channelUtilization.value = ChannelUtilization.fromScanResults(results)
+                _alerts.value = AlertEngine.analyzeCongestion(results)
             }
         }
     }
@@ -66,12 +215,10 @@ class ScannerViewModel @Inject constructor(
                 if (info != null) {
                     val now = System.currentTimeMillis()
 
-                    // Raw RSSI
                     rssiRingBuffer.addLast(now to info.rssi)
                     if (rssiRingBuffer.size > 60) rssiRingBuffer.removeFirst()
                     _rssiHistory.value = rssiRingBuffer.toList()
 
-                    // EMA-smoothed RSSI (alpha = 0.3 balances responsiveness and smoothing)
                     val smoothed = emaSmooth(info.rssi.toDouble())
                     smoothedRingBuffer.addLast(now to smoothed.toInt())
                     if (smoothedRingBuffer.size > 60) smoothedRingBuffer.removeFirst()
@@ -82,11 +229,6 @@ class ScannerViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Exponential Moving Average smoothing.
-     * Alpha = 0.3: reacts to real changes within 3-4 samples while filtering jitter.
-     * Lower alpha = smoother but slower response. Higher = more responsive but noisier.
-     */
     private fun emaSmooth(rawRssi: Double): Double {
         val current = emaValue
         return if (current == null) {

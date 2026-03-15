@@ -10,6 +10,11 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.aiaerial.signal.data.EventPipeline
+import dev.aiaerial.signal.data.alert.AlertEngine
+import dev.aiaerial.signal.data.alert.AlertNotifier
+import dev.aiaerial.signal.data.demo.DemoDataProvider
+import dev.aiaerial.signal.data.demo.DemoScenario
+import dev.aiaerial.signal.data.prefs.SignalPreferences
 import dev.aiaerial.signal.data.syslog.SyslogMessage
 import dev.aiaerial.signal.service.SyslogService
 import kotlinx.coroutines.FlowPreview
@@ -28,6 +33,8 @@ private const val MAX_MESSAGES = 5000
 class SyslogViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val eventPipeline: EventPipeline,
+    private val prefs: SignalPreferences,
+    private val alertNotifier: AlertNotifier,
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<SyslogMessage>>(emptyList())
@@ -64,6 +71,42 @@ class SyslogViewModel @Inject constructor(
         // Debounce filter text to avoid O(n) scans on every keystroke
         viewModelScope.launch {
             _filterText.debounce(300).collect { applyFilter() }
+        }
+
+        // Load demo data if demo mode is active
+        if (prefs.demoMode) {
+            loadDemoData()
+        }
+
+        // Monitor events for alert notifications
+        viewModelScope.launch {
+            eventPipeline.eventsForCurrentSession()
+                .debounce(2_000)
+                .collect { events ->
+                    if (events.isNotEmpty()) {
+                        val alerts = AlertEngine.analyzeEvents(
+                            events,
+                            rssiThreshold = prefs.alertRssiThreshold,
+                            roamChurnCount = prefs.alertRoamChurnCount,
+                            roamWindowMinutes = prefs.alertRoamWindowMinutes,
+                            authFailureCount = prefs.alertAuthFailureCount,
+                        )
+                        alerts.forEach { alertNotifier.notify(it) }
+                    }
+                }
+        }
+    }
+
+    private fun loadDemoData() {
+        val scenario = DemoScenario.entries.getOrElse(prefs.demoScenarioIndex) { DemoScenario.HEALTHY_ROAMING }
+        val demoMessages = DemoDataProvider.syslogMessages(scenario)
+        viewModelScope.launch {
+            messagesMutex.withLock {
+                allMessages.clear()
+                demoMessages.forEach { allMessages.addLast(it) }
+            }
+            _messages.value = demoMessages
+            _isRunning.value = true // show as "live" in demo mode
         }
     }
 

@@ -132,4 +132,8 @@ class EventPipeline @Inject constructor(
     fun eventCount(sessionId: String): Flow<Int> = dao.getEventCount(sessionId)
 
     suspend fun sessionSummaries() = dao.getSessionSummaries()
+
+    suspend fun deleteSession(sessionId: String) {
+        dao.deleteSession(sessionId)
+    }
 }

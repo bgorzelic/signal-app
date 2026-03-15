@@ -12,9 +12,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.aiaerial.signal.MainActivity
 import dev.aiaerial.signal.R
 import dev.aiaerial.signal.data.EventPipeline
+import dev.aiaerial.signal.data.alert.AlertEngine
+import dev.aiaerial.signal.data.alert.AlertNotifier
 import dev.aiaerial.signal.data.prefs.SignalPreferences
 import dev.aiaerial.signal.data.syslog.SyslogMessage
 import dev.aiaerial.signal.data.syslog.SyslogReceiver
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharedFlow
 import javax.inject.Inject
@@ -24,6 +27,7 @@ class SyslogService : Service() {
 
     @Inject lateinit var eventPipeline: EventPipeline
     @Inject lateinit var prefs: SignalPreferences
+    @Inject lateinit var alertNotifier: AlertNotifier
 
     companion object {
         private const val TAG = "SyslogService"
@@ -71,6 +75,24 @@ class SyslogService : Service() {
                         Log.e(TAG, "Failed to process message", e)
                     }
                 }
+            }
+            // Background alert monitoring — runs independent of UI
+            serviceScope.launch {
+                @OptIn(FlowPreview::class)
+                eventPipeline.eventsForCurrentSession()
+                    .debounce(5_000) // check every 5s of quiet
+                    .collect { events ->
+                        if (events.size >= 3) { // minimum events before analyzing
+                            val alerts = AlertEngine.analyzeEvents(
+                                events,
+                                rssiThreshold = prefs.alertRssiThreshold,
+                                roamChurnCount = prefs.alertRoamChurnCount,
+                                roamWindowMinutes = prefs.alertRoamWindowMinutes,
+                                authFailureCount = prefs.alertAuthFailureCount,
+                            )
+                            alerts.forEach { alertNotifier.notify(it) }
+                        }
+                    }
             }
         }
         return START_STICKY
