@@ -12,6 +12,7 @@ import dev.aiaerial.signal.data.local.ScanSnapshotDao
 import dev.aiaerial.signal.data.prefs.SignalPreferences
 import dev.aiaerial.signal.data.wifi.ChannelUtilization
 import dev.aiaerial.signal.data.wifi.ScanSnapshotSerializer
+import dev.aiaerial.signal.data.wifi.RadioAnalysis
 import dev.aiaerial.signal.data.wifi.SpeedTest
 import dev.aiaerial.signal.data.wifi.WifiConnectionInfo
 import dev.aiaerial.signal.data.wifi.WifiScanResult
@@ -39,6 +40,9 @@ class ScannerViewModel @Inject constructor(
 
     private val _channelUtilization = MutableStateFlow<List<ChannelUtilization>>(emptyList())
     val channelUtilization: StateFlow<List<ChannelUtilization>> = _channelUtilization.asStateFlow()
+
+    private val _radioAnalysis = MutableStateFlow<RadioAnalysis?>(null)
+    val radioAnalysis: StateFlow<RadioAnalysis?> = _radioAnalysis.asStateFlow()
 
     private val _connectionInfo = MutableStateFlow<WifiConnectionInfo?>(null)
     val connectionInfo: StateFlow<WifiConnectionInfo?> = _connectionInfo.asStateFlow()
@@ -186,6 +190,7 @@ class ScannerViewModel @Inject constructor(
         val results = DemoDataProvider.wifiScanResults(scenario)
         _scanResults.value = results.sortedByDescending { it.rssi }
         _channelUtilization.value = ChannelUtilization.fromScanResults(results)
+        _radioAnalysis.value = RadioAnalysis.from(results, _channelUtilization.value)
         _connectionInfo.value = DemoDataProvider.connectionInfo(scenario)
         _rssiHistory.value = DemoDataProvider.rssiHistory(scenario)
         // Simple smoothing of demo data
@@ -202,6 +207,7 @@ class ScannerViewModel @Inject constructor(
             wifiScanner.scanResults().collect { results ->
                 _scanResults.value = results.sortedByDescending { it.rssi }
                 _channelUtilization.value = ChannelUtilization.fromScanResults(results)
+                _radioAnalysis.value = RadioAnalysis.from(results, _channelUtilization.value)
                 _alerts.value = AlertEngine.analyzeCongestion(results)
             }
         }

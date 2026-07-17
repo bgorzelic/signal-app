@@ -72,6 +72,7 @@ fun ScannerScreen(
     val rssiHistory by viewModel.rssiHistory.collectAsStateWithLifecycle()
     val smoothedHistory by viewModel.smoothedRssiHistory.collectAsStateWithLifecycle()
     val channelUtilization by viewModel.channelUtilization.collectAsStateWithLifecycle()
+    val radioAnalysis by viewModel.radioAnalysis.collectAsStateWithLifecycle()
     val colors = SignalTheme.colors
     val alerts by viewModel.alerts.collectAsStateWithLifecycle()
     val autoScanEnabled by viewModel.autoScanEnabled.collectAsStateWithLifecycle()
@@ -302,6 +303,11 @@ fun ScannerScreen(
                     }
                 }
             }
+        }
+
+        // Signal chart with section label
+        item {
+            radioAnalysis?.let { FieldAnalystCard(it) }
         }
 
         // Signal chart with section label

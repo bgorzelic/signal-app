@@ -403,7 +403,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             color = TextTertiary,
         )
         Spacer(modifier = Modifier.height(4.dp))
-        Text("SIGNAL v0.5.0", fontSize = 12.sp, color = TextTertiary, fontFamily = FontFamily.Monospace)
+        Text("SIGNAL // FLOW v0.6.0", fontSize = 12.sp, color = TextTertiary, fontFamily = FontFamily.Monospace)
         Text("AI Aerial Solutions", fontSize = 11.sp, color = TextTertiary)
     }
 }

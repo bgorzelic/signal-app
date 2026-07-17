@@ -1,6 +1,6 @@
-# SIGNAL — WiFi Network Intelligence for Android
+# Signal & Flow — WiFi Network Intelligence for Android
 
-Android app that transforms a Pixel 10a into a wireless diagnostic sensor. Captures syslog events from enterprise WiFi controllers (Cisco WLC, Aruba, Meraki), parses them into structured network events, and displays real-time roaming timelines with AI-powered triage via OpenClaw.
+Android field utility that transforms a phone into a wireless diagnostic sensor. It combines live WiFi scanning, local statistical RF assessment, enterprise-controller syslog parsing, roaming timelines, exports, alerts, and optional agent-assisted triage.
 
 ## Quick Start
 
@@ -121,4 +121,4 @@ signal-app/
 
 ## Status
 
-Active development. Version 0.3.0.
+Active development. Version 0.7.0 introduces the unified field workflow: a plain-language Simple mode, an expandable Wireless Engineer mode using the same measurements, a one-tap Quick Check, outcome-based navigation, and a phone-only client walk test.

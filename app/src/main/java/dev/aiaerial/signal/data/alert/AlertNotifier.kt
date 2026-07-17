@@ -1,6 +1,7 @@
 package dev.aiaerial.signal.data.alert
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -37,6 +38,7 @@ class AlertNotifier @Inject constructor(
     // the previous notification for that type rather than stacking.
     private val notificationIdMap = AlertType.entries.associateWith { it.ordinal + 1 }
 
+    @SuppressLint("MissingPermission") // Guarded by hasNotificationPermission() immediately below.
     fun notify(alert: Alert) {
         if (alert.severity == AlertSeverity.INFO) return
 

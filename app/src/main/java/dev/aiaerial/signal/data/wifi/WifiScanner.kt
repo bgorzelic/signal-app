@@ -1,5 +1,7 @@
 package dev.aiaerial.signal.data.wifi
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -10,6 +12,8 @@ import android.net.wifi.ScanResult
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -24,9 +28,11 @@ class WifiScanner @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     /** Emits scan results whenever a WiFi scan completes. */
+    @SuppressLint("MissingPermission") // Every read is guarded by hasScanPermission().
     fun scanResults(): Flow<List<WifiScanResult>> = callbackFlow {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, intent: Intent) {
+                if (!hasScanPermission()) return
                 val results = wifiManager.scanResults.map { it.toWifiScanResult() }
                 trySend(results)
             }
@@ -36,7 +42,9 @@ class WifiScanner @Inject constructor(
             IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION),
         )
         // Emit current results immediately
-        trySend(wifiManager.scanResults.map { it.toWifiScanResult() })
+        if (hasScanPermission()) {
+            trySend(wifiManager.scanResults.map { it.toWifiScanResult() })
+        }
 
         awaitClose { context.unregisterReceiver(receiver) }
     }
@@ -47,9 +55,14 @@ class WifiScanner @Inject constructor(
      * ~4 scans per 2 minutes in foreground. This is the only way to request scans.
      */
     @Suppress("DEPRECATION")
+    @SuppressLint("MissingPermission") // Guarded by hasScanPermission().
     fun triggerScan() {
-        wifiManager.startScan()
+        if (hasScanPermission()) wifiManager.startScan()
     }
+
+    private fun hasScanPermission(): Boolean =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
 
     /**
      * Get current WiFi connection info, or null if not connected.
